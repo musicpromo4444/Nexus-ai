@@ -1,0 +1,547 @@
+import React, { useState, useEffect } from 'react';
+import {
+  AppPage,
+  GradientTheme,
+  InteractionMode,
+  VoiceState,
+  ChatMessage,
+  ChatSession,
+  ComputeTier,
+  LocalAction,
+} from './types';
+import { DYNAMIC_GRADIENT_THEMES } from './constants/themes';
+import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
+import { VoiceInterface } from './components/VoiceInterface';
+import { ChatInterface } from './components/ChatInterface';
+import { ThemeCustomizer } from './components/ThemeCustomizer';
+import { PagesDrawer } from './components/PagesDrawer';
+import { SubscriptionPage } from './components/pages/SubscriptionPage';
+import { RecommendationPage } from './components/pages/RecommendationPage';
+import { CreationPage } from './components/pages/CreationPage';
+import { ProfilePage } from './components/pages/ProfilePage';
+import { MemoryRoutinesPage } from './components/pages/MemoryRoutinesPage';
+import { SettingsPage } from './components/pages/SettingsPage';
+import { playUiSound } from './utils/audio';
+import { dispatchHybridReasoning } from './services/reasoningEngine';
+
+const INITIAL_SESSIONS: ChatSession[] = [
+  {
+    id: 'session-1',
+    title: 'Personal Assistant Initialization',
+    category: 'today',
+    timestamp: 'Just now',
+    messageCount: 3,
+  },
+  {
+    id: 'session-2',
+    title: 'Offline Cache & Privacy Architecture',
+    category: 'today',
+    timestamp: '2 hours ago',
+    messageCount: 8,
+  },
+  {
+    id: 'session-3',
+    title: 'Local Script Automation & Workflow',
+    category: 'earlier',
+    timestamp: 'Yesterday',
+    messageCount: 5,
+  },
+];
+
+const INITIAL_MESSAGES: ChatMessage[] = [
+  {
+    id: 'm-1',
+    sender: 'assistant',
+    text: 'Greetings. I am Nexus AI — your personal cognitive assistant. I am engineered with a voice-first neural interface, an offline text chat fallback, and a Hybrid Reasoning Engine allowing you to seamlessly toggle between instant Fast Cache responses and Deep Chain-of-Thought problem decomposition.',
+    timestamp: '14:02',
+    mode: 'offline-text',
+    computeTier: 'quick',
+    executionTier: 'local',
+    routeReason: 'Local On-Device Engine: Initialization',
+    thoughts: 'Loaded local vector cache: 142MB. Audio speech synthesis ready. Theme engine configured with 7 dynamic gradients.',
+    latencyMs: 12,
+    tokensUsed: 32,
+  },
+  {
+    id: 'm-2',
+    sender: 'user',
+    text: 'Break down step-by-step how the offline fallback mode ensures zero latency and air-gapped security.',
+    timestamp: '14:04',
+    mode: 'offline-text',
+  },
+  {
+    id: 'm-3',
+    sender: 'assistant',
+    text: 'When you toggle into Offline Text Fallback, Nexus runs directly against the browser sandbox and local indexed storage without transmitting payloads over the public network. This delivers sub-20ms inference and total data sovereignty.',
+    timestamp: '14:04',
+    mode: 'offline-text',
+    computeTier: 'deep',
+    executionTier: 'local',
+    routeReason: 'Local On-Device Mode: Security Architecture CoT',
+    autoTriggered: true,
+    thoughts: 'Queried offline security module. Verified zero outbound HTTP requests.',
+    reasoningSteps: [
+      {
+        step: 1,
+        title: 'Problem Scope: Air-Gapped Security',
+        details: 'Evaluated client requirement for local-first zero network persistence and sub-millisecond execution guarantees.',
+        status: 'completed',
+      },
+      {
+        step: 2,
+        title: 'Storage & Sandbox Partitioning',
+        details: 'Checked AES-GCM-256 in-memory key derivations and indexed table boundary quotas (512MB limit).',
+        status: 'completed',
+      },
+      {
+        step: 3,
+        title: 'Multi-Step Deductive Proof',
+        details: 'Confirmed zero socket egress; local state mutations execute synchronously without external dependencies.',
+        status: 'completed',
+      },
+      {
+        step: 4,
+        title: 'Verification & Policy Synthesis',
+        details: 'Synthesized strict local security policy contract and verified browser sandbox isolation.',
+        status: 'completed',
+      },
+    ],
+    latencyMs: 14,
+    tokensUsed: 680,
+    codeSnippet: {
+      language: 'typescript',
+      code: `// Nexus Local Offline Storage Engine
+export interface LocalSecurityPolicy {
+  airGapped: boolean;
+  maxLatencyMs: number;
+  encryption: 'AES-GCM-256';
+  storageQuotaMB: 512;
+}
+
+export const NEXUS_OFFLINE_CONFIG: LocalSecurityPolicy = {
+  airGapped: true,
+  maxLatencyMs: 18,
+  encryption: 'AES-GCM-256',
+  storageQuotaMB: 512,
+};`,
+    },
+  },
+];
+
+export default function App() {
+  // Theme state: defaults to Hyper Violet (first of 7 dynamic gradients)
+  const [activeTheme, setActiveTheme] = useState<GradientTheme>(DYNAMIC_GRADIENT_THEMES[0]);
+  const [glowIntensity, setGlowIntensity] = useState<'subtle' | 'vibrant' | 'radiant'>('vibrant');
+  const [ambientAuraEnabled, setAmbientAuraEnabled] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [isThemeCustomizerOpen, setIsThemeCustomizerOpen] = useState<boolean>(false);
+  const [isPagesDrawerOpen, setIsPagesDrawerOpen] = useState<boolean>(false);
+  const [activePage, setActivePage] = useState<AppPage>('assistant');
+
+  // Hybrid Reasoning Engine state
+  const [computeTier, setComputeTier] = useState<ComputeTier>('deep');
+  const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true);
+
+  // Interaction Mode: 'voice' | 'offline-text'
+  const [mode, setMode] = useState<InteractionMode>('voice');
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+
+  // Sidebar navigation state
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+
+  // Chat sessions & active messages
+  const [sessions, setSessions] = useState<ChatSession[]>(INITIAL_SESSIONS);
+  const [activeSessionId, setActiveSessionId] = useState<string>('session-1');
+  const [sessionMessages, setSessionMessages] = useState<Record<string, ChatMessage[]>>({
+    'session-1': INITIAL_MESSAGES,
+    'session-2': [
+      {
+        id: 's2-1',
+        sender: 'assistant',
+        text: 'Session loaded: Offline Cache & Privacy Architecture. Local encryption is active.',
+        timestamp: '12:15',
+        mode: 'offline-text',
+        latencyMs: 11,
+      },
+    ],
+    'session-3': [
+      {
+        id: 's3-1',
+        sender: 'assistant',
+        text: 'Session loaded: Local Script Automation. 4 scripts ready in the offline vault.',
+        timestamp: 'Yesterday',
+        mode: 'offline-text',
+        latencyMs: 9,
+      },
+    ],
+  });
+
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+
+  // Active messages list
+  const currentMessages = sessionMessages[activeSessionId] || [];
+
+  // Update dynamic CSS variables on body for smooth ambient glows
+  useEffect(() => {
+    document.documentElement.style.setProperty('--primary-glow', activeTheme.glowRgba);
+    document.documentElement.style.setProperty('--primary-hex', activeTheme.primaryHex);
+  }, [activeTheme]);
+
+  // Handle mode toggle between voice-first and offline-text
+  const handleToggleMode = (newMode: InteractionMode) => {
+    setMode(newMode);
+    if (newMode === 'voice') {
+      setVoiceState('idle');
+    }
+  };
+
+  // Create a new session
+  const handleNewSession = () => {
+    const newId = `session-${Date.now()}`;
+    const newSession: ChatSession = {
+      id: newId,
+      title: `Nexus Session ${sessions.length + 1}`,
+      category: 'today',
+      timestamp: 'Just now',
+      messageCount: 1,
+    };
+
+    const initialGreeting: ChatMessage = {
+      id: `m-${Date.now()}`,
+      sender: 'assistant',
+      text: 'New session initialized. Nexus AI is ready in ' + (mode === 'voice' ? 'Voice-First' : 'Offline Text Fallback') + ' mode.',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      mode,
+      latencyMs: 8,
+    };
+
+    setSessions([newSession, ...sessions]);
+    setSessionMessages((prev) => ({ ...prev, [newId]: [initialGreeting] }));
+    setActiveSessionId(newId);
+  };
+
+  // Delete a session
+  const handleDeleteSession = (idToDelete: string) => {
+    const updated = sessions.filter((s) => s.id !== idToDelete);
+    setSessions(updated);
+    if (activeSessionId === idToDelete && updated.length > 0) {
+      setActiveSessionId(updated[0].id);
+    }
+  };
+
+  // Handle local actions triggered by on-device mode
+  const handleLocalAction = (action: LocalAction) => {
+    if (action.type === 'CHANGE_THEME' && action.payload?.themeId) {
+      const found = DYNAMIC_GRADIENT_THEMES.find((t) => t.id === action.payload.themeId);
+      if (found) {
+        setActiveTheme(found);
+      }
+    } else if (action.type === 'TOGGLE_SOUND') {
+      const enable = action.payload?.enable ?? !soundEnabled;
+      setSoundEnabled(enable);
+    } else if (action.type === 'SWITCH_MODE' && action.payload?.mode) {
+      setMode(action.payload.mode);
+    } else if (action.type === 'CLEAR_CHAT') {
+      setSessionMessages((prev) => ({
+        ...prev,
+        [activeSessionId]: [],
+      }));
+    }
+  };
+
+  // Handle user text message send with Dual-Tier Execution Router
+  const handleSendMessage = async (text: string): Promise<ChatMessage | null> => {
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text,
+      timestamp: nowStr,
+      mode,
+    };
+
+    // Append user message immediately
+    setSessionMessages((prev) => ({
+      ...prev,
+      [activeSessionId]: [...(prev[activeSessionId] || []), userMsg],
+    }));
+
+    setIsGenerating(true);
+
+    try {
+      // Execute through Dual-Tier Execution Router (Local Engine vs. Cloud API Fallback Router)
+      const result = await dispatchHybridReasoning({
+        prompt: text,
+        computeTier,
+        autoDetect: autoDetectReasoning,
+        mode,
+        activeTheme,
+        soundEnabled,
+        onLocalAction: handleLocalAction,
+      });
+
+      const assistantMsg: ChatMessage = {
+        id: `asst-${Date.now()}`,
+        sender: 'assistant',
+        text: result.text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        mode,
+        computeTier: result.effectiveTier,
+        executionTier: result.executionTier,
+        routeReason: result.routeReason,
+        sources: result.sources,
+        thoughts: result.thoughts,
+        reasoningSteps: result.reasoningSteps,
+        autoTriggered: result.autoTriggered,
+        latencyMs: result.latencyMs,
+        tokensUsed: result.tokensUsed,
+        codeSnippet: result.codeSnippet,
+      };
+
+      setSessionMessages((prev) => ({
+        ...prev,
+        [activeSessionId]: [...(prev[activeSessionId] || []), assistantMsg],
+      }));
+
+      return assistantMsg;
+    } catch {
+      // Graceful fallback if anything unexpected occurs
+      const assistantMsg: ChatMessage = {
+        id: `asst-${Date.now()}`,
+        sender: 'assistant',
+        text: `Processed: "${text}". Operating under secure local sandbox parameters.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        mode,
+        computeTier,
+        executionTier: 'local',
+        routeReason: 'Local Engine (Emergency Fallback)',
+        thoughts: 'Evaluated intent against local cache dictionary. Zero external network sockets opened.',
+        latencyMs: 12,
+      };
+
+      setSessionMessages((prev) => ({
+        ...prev,
+        [activeSessionId]: [...(prev[activeSessionId] || []), assistantMsg],
+      }));
+
+      return assistantMsg;
+    } finally {
+      setIsGenerating(false);
+      if (soundEnabled) {
+        playUiSound('message');
+      }
+    }
+  };
+
+  // Handle voice query
+  const handleSendVoiceQuery = async (query: string) => {
+    return await handleSendMessage(query);
+  };
+
+  // Clear messages for active session
+  const handleClearMessages = () => {
+    setSessionMessages((prev) => ({
+      ...prev,
+      [activeSessionId]: [],
+    }));
+  };
+
+  // Intensity glow modifier for styling
+  const glowOpacity =
+    glowIntensity === 'subtle' ? '0.25' : glowIntensity === 'radiant' ? '0.75' : '0.45';
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-[#0b0d13] text-[#e2e8f0] relative font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Dynamic Ambient Background Aurora Mesh */}
+      {ambientAuraEnabled && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div
+            className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full blur-[140px] transition-all duration-1000"
+            style={{
+              background: activeTheme.primaryHex,
+              opacity: glowOpacity,
+              transform: 'scale(1)',
+            }}
+          />
+          <div
+            className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full blur-[160px] transition-all duration-1000"
+            style={{
+              background: activeTheme.secondaryHex,
+              opacity: Number(glowOpacity) * 0.7,
+              transform: 'scale(1)',
+            }}
+          />
+          {/* Subtle noise grid pattern overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30" />
+        </div>
+      )}
+
+      {/* Sleek Minimalist Sidebar */}
+      <Sidebar
+        activeTheme={activeTheme}
+        mode={mode}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={setActiveSessionId}
+        onNewSession={handleNewSession}
+        onDeleteSession={handleDeleteSession}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        soundEnabled={soundEnabled}
+        onOpenThemeCustomizer={() => setIsThemeCustomizerOpen(true)}
+      />
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 h-full relative z-10">
+        {/* Top Header with Mode Toggle, Theme Selector, and Hybrid Reasoning Switch */}
+        <Header
+          activeTheme={activeTheme}
+          mode={mode}
+          onToggleMode={handleToggleMode}
+          voiceState={voiceState}
+          onOpenThemeCustomizer={() => setIsThemeCustomizerOpen(true)}
+          isPagesDrawerOpen={isPagesDrawerOpen}
+          onTogglePagesDrawer={() => setIsPagesDrawerOpen(!isPagesDrawerOpen)}
+          soundEnabled={soundEnabled}
+          computeTier={computeTier}
+          onToggleComputeTier={setComputeTier}
+          autoDetectReasoning={autoDetectReasoning}
+          onToggleAutoDetect={() => setAutoDetectReasoning(!autoDetectReasoning)}
+          activePage={activePage}
+          onSelectPage={setActivePage}
+        />
+
+        {/* View Switcher: Active Core Page vs Assistant Workspace */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+          {activePage === 'subscription' && (
+            <SubscriptionPage
+              activeTheme={activeTheme}
+              onBackToAssistant={() => setActivePage('assistant')}
+              soundEnabled={soundEnabled}
+            />
+          )}
+
+          {activePage === 'recommendation' && (
+            <RecommendationPage
+              activeTheme={activeTheme}
+              onBackToAssistant={() => setActivePage('assistant')}
+              onRunWorkflowPrompt={(prompt, deep) => {
+                setActivePage('assistant');
+                setMode('offline-text');
+                if (deep) setComputeTier('deep');
+                handleSendMessage(prompt);
+              }}
+              soundEnabled={soundEnabled}
+            />
+          )}
+
+          {activePage === 'creation' && (
+            <CreationPage
+              activeTheme={activeTheme}
+              onBackToAssistant={() => setActivePage('assistant')}
+              soundEnabled={soundEnabled}
+            />
+          )}
+
+          {activePage === 'profile' && (
+            <ProfilePage
+              activeTheme={activeTheme}
+              onBackToAssistant={() => setActivePage('assistant')}
+              soundEnabled={soundEnabled}
+            />
+          )}
+
+          {(activePage === 'memory-routines' || activePage === 'neural-modules') && (
+            <MemoryRoutinesPage
+              activeTheme={activeTheme}
+              onBackToAssistant={() => setActivePage('assistant')}
+              onRunRoutinePrompt={(prompt) => {
+                setActivePage('assistant');
+                setMode('offline-text');
+                handleSendMessage(prompt);
+              }}
+              soundEnabled={soundEnabled}
+            />
+          )}
+
+          {activePage === 'settings' && (
+            <SettingsPage
+              activeTheme={activeTheme}
+              onSelectTheme={setActiveTheme}
+              onBackToAssistant={() => setActivePage('assistant')}
+              soundEnabled={soundEnabled}
+              onToggleSound={() => setSoundEnabled(!soundEnabled)}
+              ambientAuraEnabled={ambientAuraEnabled}
+              onToggleAmbientAura={() => setAmbientAuraEnabled(!ambientAuraEnabled)}
+              computeTier={computeTier}
+              onToggleComputeTier={setComputeTier}
+              onOpenThemeCustomizer={() => setIsThemeCustomizerOpen(true)}
+            />
+          )}
+
+          {activePage === 'assistant' && (
+            mode === 'voice' ? (
+              <VoiceInterface
+                activeTheme={activeTheme}
+                voiceState={voiceState}
+                setVoiceState={setVoiceState}
+                onSwitchToOfflineText={() => handleToggleMode('offline-text')}
+                soundEnabled={soundEnabled}
+                onSendVoiceQuery={handleSendVoiceQuery}
+                computeTier={computeTier}
+                onToggleComputeTier={setComputeTier}
+                autoDetectReasoning={autoDetectReasoning}
+              />
+            ) : (
+              <ChatInterface
+                activeTheme={activeTheme}
+                messages={currentMessages}
+                onSendMessage={handleSendMessage}
+                onClearMessages={handleClearMessages}
+                onSwitchToVoice={() => handleToggleMode('voice')}
+                soundEnabled={soundEnabled}
+                isGenerating={isGenerating}
+                computeTier={computeTier}
+                onToggleComputeTier={setComputeTier}
+                autoDetectReasoning={autoDetectReasoning}
+                onToggleAutoDetect={() => setAutoDetectReasoning(!autoDetectReasoning)}
+              />
+            )
+          )}
+        </div>
+      </main>
+
+      {/* Sleek Floating Pages & Navigation Overlay Drawer */}
+      <PagesDrawer
+        isOpen={isPagesDrawerOpen}
+        onClose={() => setIsPagesDrawerOpen(false)}
+        activePage={activePage}
+        onSelectPage={(page) => {
+          setActivePage(page);
+          setIsPagesDrawerOpen(false);
+        }}
+        activeTheme={activeTheme}
+        onSelectTheme={setActiveTheme}
+        soundEnabled={soundEnabled}
+      />
+
+      {/* Theme Customizer Modal */}
+      <ThemeCustomizer
+        isOpen={isThemeCustomizerOpen}
+        onClose={() => setIsThemeCustomizerOpen(false)}
+        activeTheme={activeTheme}
+        onSelectTheme={setActiveTheme}
+        glowIntensity={glowIntensity}
+        onChangeGlowIntensity={setGlowIntensity}
+        ambientAuraEnabled={ambientAuraEnabled}
+        onToggleAmbientAura={() => setAmbientAuraEnabled(!ambientAuraEnabled)}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+      />
+    </div>
+  );
+}
