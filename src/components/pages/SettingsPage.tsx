@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Sliders,
@@ -54,8 +54,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     saveNexusState('nexus_background_listening', enabled);
   };
 
-  saveNexusState('nexus_offline_grace_period', offlineGracePeriod);
-  saveNexusState('nexus_telemetry_opt_in', telemetryOptIn);
+  useEffect(() => { saveNexusState('nexus_offline_grace_period', offlineGracePeriod); }, [offlineGracePeriod]);
+  useEffect(() => { saveNexusState('nexus_telemetry_opt_in', telemetryOptIn); }, [telemetryOptIn]);
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 max-w-5xl mx-auto w-full space-y-8 animate-in fade-in duration-300">
