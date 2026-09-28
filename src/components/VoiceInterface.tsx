@@ -27,6 +27,8 @@ interface VoiceInterfaceProps {
   computeTier: ComputeTier;
   onToggleComputeTier: (tier: ComputeTier) => void;
   autoDetectReasoning: boolean;
+  backgroundListening: boolean;
+  onToggleBackgroundListening: () => void;
 }
 
 export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
@@ -39,6 +41,8 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   computeTier,
   onToggleComputeTier,
   autoDetectReasoning,
+  backgroundListening,
+  onToggleBackgroundListening,
 }) => {
   const [transcript, setTranscript] = useState<string>('');
   const [assistantSpokenText, setAssistantSpokenText] = useState<string>(
@@ -50,6 +54,69 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<string>('');
   const audioAnimationRef = useRef<number | null>(null);
+  const backgroundRecognitionRef = useRef<any>(null);
+  const backgroundRestartTimerRef = useRef<number | null>(null);
+  const backgroundTranscriptRef = useRef<string>('');
+
+  // Background voice: keeps listening while this Nexus page remains open and the browser permits microphone access.
+  // Native OS-level background listening still requires the Android app/bridge.
+  useEffect(() => {
+    if (!backgroundListening || !('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      try { backgroundRecognitionRef.current?.stop?.(); } catch { /* ignore */ }
+      backgroundRecognitionRef.current = null;
+      if (backgroundRestartTimerRef.current) window.clearTimeout(backgroundRestartTimerRef.current);
+      backgroundRestartTimerRef.current = null;
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).SpeechRecognition ||
+      (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+
+    let disposed = false;
+    const start = () => {
+      if (disposed || backgroundRecognitionRef.current) return;
+      try {
+        const recognition = new SpeechRecognition();
+        backgroundRecognitionRef.current = recognition;
+        backgroundTranscriptRef.current = '';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognition.onresult = (event: any) => {
+          let combined = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) combined += event.results[i][0].transcript;
+          backgroundTranscriptRef.current = combined.trim();
+          if (event.results[event.results.length - 1]?.isFinal && combined.trim()) {
+            const query = combined.trim();
+            backgroundTranscriptRef.current = '';
+            processQuery(query);
+          }
+        };
+        recognition.onerror = () => {
+          backgroundRecognitionRef.current = null;
+          if (!disposed) backgroundRestartTimerRef.current = window.setTimeout(start, 1500);
+        };
+        recognition.onend = () => {
+          backgroundRecognitionRef.current = null;
+          if (!disposed && backgroundListening) backgroundRestartTimerRef.current = window.setTimeout(start, 700);
+        };
+        recognition.start();
+      } catch {
+        backgroundRecognitionRef.current = null;
+        if (!disposed) backgroundRestartTimerRef.current = window.setTimeout(start, 2000);
+      }
+    };
+
+    start();
+    return () => {
+      disposed = true;
+      try { backgroundRecognitionRef.current?.stop?.(); } catch { /* ignore */ }
+      backgroundRecognitionRef.current = null;
+      if (backgroundRestartTimerRef.current) window.clearTimeout(backgroundRestartTimerRef.current);
+      backgroundRestartTimerRef.current = null;
+    };
+  }, [backgroundListening]);
 
   // Quick Voice Prompts
   const quickVoicePrompts = [
