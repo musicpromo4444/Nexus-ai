@@ -27,6 +27,7 @@ class VoiceAssistantService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private val endpoint = "https://nexus-ai-three-neon.vercel.app/api/chat"
     private val channelId = "nexus_voice"
+    private var speaking = false
 
     override fun onCreate() {
         super.onCreate()
@@ -103,6 +104,12 @@ class VoiceAssistantService : Service() {
         Thread { requestAi(text) }.start()
     }
 
+    private fun speakProactive(text: String) {
+        speaking = true
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "nexus_proactive")
+        android.os.Handler(mainLooper).postDelayed({ speaking = false; restart() }, 2500)
+    }
+
     private fun requestAi(text: String) {
         try {
             val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
@@ -115,6 +122,14 @@ class VoiceAssistantService : Service() {
             connection.outputStream.use { it.write(JSONObject().put("message", text).toString().toByteArray()) }
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             sendBroadcast(Intent(ACTION_AI_RESPONSE).setPackage(packageName).putExtra("response", body))
+            try {
+                val json = JSONObject(body)
+                val answer = json.optString("text", "").trim()
+                if (answer.isNotBlank()) {
+                    val shouldOfferReadout = json.optBoolean("offerReadout", false)
+                    if (shouldOfferReadout) speakProactive("I found it. Would you like me to read it out for you?")
+                }
+            } catch (_: Exception) {}
             connection.disconnect()
         } catch (e: Exception) {
             sendBroadcast(Intent(ACTION_AI_RESPONSE).setPackage(packageName).putExtra("error", "AI service unavailable"))
