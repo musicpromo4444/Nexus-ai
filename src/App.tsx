@@ -163,6 +163,29 @@ export default function App() {
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
+  // Local reminder watcher: fires due reminders while Nexus is open.
+  useEffect(() => {
+    const tick = () => {
+      const reminders = loadNexusState<Array<{ id: string; title: string; dueAt: string; firedAt?: string }>>('nexus_reminders', []);
+      const now = Date.now();
+      let changed = false;
+      const updated = reminders.map((reminder) => {
+        if (!reminder.firedAt && Date.parse(reminder.dueAt) <= now) {
+          changed = true;
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('Nexus reminder', { body: reminder.title });
+          }
+          return { ...reminder, firedAt: new Date().toISOString() };
+        }
+        return reminder;
+      });
+      if (changed) saveNexusState('nexus_reminders', updated);
+    };
+    tick();
+    const timer = window.setInterval(tick, 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   // Persist conversations locally so Nexus survives refreshes and app restarts.
   useEffect(() => {
     saveNexusState('nexus_chat_sessions', sessions);
