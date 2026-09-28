@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Nexus</string>
+    <string name="accessibility_description">Allows Nexus to understand visible app controls and perform user-approved screen actions.</string>
+</resources>
