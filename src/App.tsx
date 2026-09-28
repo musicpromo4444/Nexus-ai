@@ -95,6 +95,15 @@ export default function App() {
     saveNexusState('nexus_chat_messages', sessionMessages);
   }, [sessionMessages]);
 
+  // Keep sidebar counts synchronized with real conversation data.
+  useEffect(() => {
+    setSessions((prev) => prev.map((session) => ({
+      ...session,
+      messageCount: (sessionMessages[session.id] || []).length,
+      timestamp: session.id === activeSessionId ? 'Just now' : session.timestamp,
+    })));
+  }, [sessionMessages, activeSessionId]);
+
   // Active messages list
   const currentMessages = sessionMessages[activeSessionId] || [];
 
@@ -121,15 +130,6 @@ export default function App() {
       category: 'today',
       timestamp: 'Just now',
       messageCount: 0,
-    };
-
-    const initialGreeting: ChatMessage = {
-      id: `m-${Date.now()}`,
-      sender: 'assistant',
-      text: 'New session initialized. Nexus AI is ready in ' + (mode === 'voice' ? 'Voice-First' : 'Offline Text Fallback') + ' mode.',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      mode,
-      latencyMs: 8,
     };
 
     setSessions([newSession, ...sessions]);
