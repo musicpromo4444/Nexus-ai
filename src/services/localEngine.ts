@@ -120,7 +120,7 @@ export async function getDeviceTelemetry(): Promise<{
 }
 
 /**
- * Built-in Local State & Mock Execution Engine
+ * Built-in Local State & Device Capability Engine
  * Executes local UI actions, device queries, arithmetic, and air-gapped tasks directly on-device
  */
 export async function executeLocalEngine(params: {
@@ -175,7 +175,7 @@ export async function executeLocalEngine(params: {
       return {
         text: targetMode === 'voice'
           ? `Transferred control to **Voice-First Neural Synapse**. The central interactive audio orb is active and listening.`
-          : `Transferred control to **Offline Text Fallback**. Operating in private, air-gapped text mode with zero network socket usage.`,
+          : `Transferred control to **Offline Text Fallback**. Operating in private, air-gapped text mode with without claiming network isolation.`,
         effectiveTier: 'quick',
         executionTier: 'local',
         routeReason: 'Local UI Action: Synapse Mode Switch',
@@ -198,6 +198,19 @@ export async function executeLocalEngine(params: {
         tokensUsed: 0,
         localAction: { ...action, executed: true },
       };
+    }
+
+    if (action.type === 'OPEN_PAGE') {
+      const page = String(action.payload?.page || 'assistant');
+      const allowed = ['assistant','subscription','recommendation','creation','profile','memory-routines','neural-modules','settings','device'];
+      if (allowed.includes(page) && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('nexus:navigate', { detail: { page } }));
+      return { text: allowed.includes(page) ? `Opening **${page.replace(/-/g, ' ')}**.` : 'That Nexus page is not available.', effectiveTier:'quick', executionTier:'local', routeReason:'Local UI Action: Page Navigation', autoTriggered:false, latencyMs:Math.max(5,Math.round(performance.now()-startTime)), tokensUsed:0, localAction:{...action,executed:allowed.includes(page)} };
+    }
+
+    if (action.type === 'OPEN_URL') {
+      const url = String(action.payload?.url || '').trim();
+      if (/^https?:\\/\\//i.test(url) && typeof window !== 'undefined') window.open(url, '_blank', 'noopener,noreferrer');
+      return { text: /^https?:\\/\\//i.test(url) ? `Opening **${url}** in a new tab.` : 'I can only open secure web URLs.', effectiveTier:'quick', executionTier:'local', routeReason:'Local UI Action: Web Navigation', autoTriggered:false, latencyMs:Math.max(5,Math.round(performance.now()-startTime)), tokensUsed:0, localAction:{...action,executed:/^https?:\\/\\//i.test(url)} };
     }
 
     if (action.type === 'SET_REMINDER') {
@@ -248,7 +261,7 @@ export async function executeLocalEngine(params: {
     const latencyMs = Math.max(5, Math.round(performance.now() - startTime) + 3);
 
     return {
-      text: `Current device time is **${timeStr}** on **${dateStr}**.\n*(Synchronized directly from your local hardware RTC — 0ms network latency)*`,
+      text: `Current device time is **${timeStr}** on **${dateStr}**.\n`,
       effectiveTier: 'quick',
       executionTier: 'local',
       routeReason: 'Local On-Device Mode: Real-Time Clock RTC',
@@ -297,7 +310,7 @@ export async function executeLocalEngine(params: {
 • **Inference Latency:** Sub-15ms local bus execution
 • **Active Theme:** ${activeTheme?.name || 'Default'} (\`${activeTheme?.primaryHex || '#00ffc4'}\`)
 
-All system diagnostics are nominal with zero external telemetry broadcast.`;
+Only capabilities exposed by this browser are reported; unavailable values are not fabricated.`;
 
     return {
       text,
