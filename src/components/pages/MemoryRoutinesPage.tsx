@@ -47,80 +47,6 @@ interface MemoryRoutinesPageProps {
   soundEnabled: boolean;
 }
 
-const INITIAL_MEMORIES: MemoryItem[] = [
-  {
-    id: 'mem-1',
-    category: 'Communication',
-    title: 'Concise Technical Tone',
-    content: 'Prefers direct, technical, jargon-free explanations with clear architecture diagrams and no promotional filler.',
-    isLocked: true,
-    createdAt: 'Sep 12, 2026',
-  },
-  {
-    id: 'mem-2',
-    category: 'Work Context',
-    title: 'Primary Tech Stack',
-    content: 'Actively builds in React 18, TypeScript, Tailwind CSS, Vite, and containerized Node.js microservices.',
-    isLocked: true,
-    createdAt: 'Sep 14, 2026',
-  },
-  {
-    id: 'mem-3',
-    category: 'Schedule',
-    title: 'Active Timezone & Hours',
-    content: 'Operating in Pacific Time (PT). Deep focus sprint hours are 9:30 AM to 12:30 PM.',
-    isLocked: false,
-    createdAt: 'Sep 15, 2026',
-  },
-  {
-    id: 'mem-4',
-    category: 'Preferences',
-    title: 'Code Formatting Convention',
-    content: 'Format multi-step mathematical and algorithmic reasoning into numbered steps with explicit token breakdowns.',
-    isLocked: false,
-    createdAt: 'Sep 16, 2026',
-  },
-];
-
-const INITIAL_ROUTINES: RoutineItem[] = [
-  {
-    id: 'rt-1',
-    title: 'Morning Executive Briefing',
-    trigger: 'Daily at 8:00 AM',
-    triggerType: 'schedule',
-    description: 'Summarizes critical system priorities, pending tasks, weather, and queues top 3 focus objectives.',
-    prompt: 'Execute Morning Executive Briefing: Review today’s priority tasks, check scheduled milestones, and formulate three high-impact focus goals.',
-    enabled: true,
-  },
-  {
-    id: 'rt-2',
-    title: 'Evening Debrief & Queue',
-    trigger: 'Daily at 10:30 PM',
-    triggerType: 'schedule',
-    description: 'Reviews accomplishments, archives completed sessions, and outlines tomorrow morning’s launch queue.',
-    prompt: 'Provide an Evening Debrief: Summarize completed objectives, note resolved blockers, and set the starting task for tomorrow.',
-    enabled: true,
-  },
-  {
-    id: 'rt-3',
-    title: 'Deep Work Focus Protocol',
-    trigger: 'Voice: "Activate Focus Mode"',
-    triggerType: 'voice',
-    description: 'Switches assistant into ultra-dense responses, silences non-urgent notifications, and prioritizes code solutions.',
-    prompt: 'Initiate Deep Work Focus protocol: Keep responses strictly under 3 sentences, provide direct runnable code, and minimize commentary.',
-    enabled: false,
-  },
-  {
-    id: 'rt-4',
-    title: 'Weekly Retrospective & Analysis',
-    trigger: 'Fridays at 5:00 PM',
-    triggerType: 'schedule',
-    description: 'Aggregates weekly conversation themes, code iterations, and highlights key accomplishments.',
-    prompt: 'Draft a concise Weekly Retrospective: review key architecture decisions made this week and outline upcoming sprint items.',
-    enabled: true,
-  },
-];
-
 export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
   activeTheme,
   onBackToAssistant,
@@ -178,7 +104,7 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
 
   const handleResetMemories = () => {
     if (soundEnabled) playUiSound('activate');
-    setMemories(INITIAL_MEMORIES);
+    setMemories([]);
   };
 
   const handleAddMemorySubmit = (e: React.FormEvent) => {
