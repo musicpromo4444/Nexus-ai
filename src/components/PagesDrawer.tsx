@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Check,
   Activity,
-  Layers
+  Layers,
+  Smartphone
 } from 'lucide-react';
 import { AppPage, GradientTheme } from '../types';
 import { playUiSound } from '../utils/audio';
@@ -97,6 +98,15 @@ export const PagesDrawer: React.FC<PagesDrawerProps> = ({
       badge: 'Personalized',
       badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
       description: 'Saved user context, custom preferences, and automated morning/evening macros',
+    },
+    {
+      id: 'device' as AppPage,
+      name: 'Device & Permissions',
+      tagline: 'See what Nexus can access on this device',
+      icon: Smartphone,
+      badge: 'Device',
+      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      description: 'Real browser capability checks and permission boundaries',
     },
     {
       id: 'settings' as AppPage,
