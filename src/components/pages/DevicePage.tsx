@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Smartphone, Mic, Bell, ShieldCheck, CheckCircle2, XCircle, ChevronLeft, RefreshCw, Lock } from 'lucide-react';
 import { GradientTheme } from '../../types';
 import { playUiSound } from '../../utils/audio';
+import { getDeviceBridgeStatus } from '../../services/localEngine';
 
 interface DevicePageProps {
   activeTheme: GradientTheme;
@@ -14,9 +15,12 @@ type Capability = { label: string; detail: string; available: boolean };
 export const DevicePage: React.FC<DevicePageProps> = ({ activeTheme, onBackToAssistant, soundEnabled }) => {
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [checking, setChecking] = useState(false);
+  const [bridgeConnected, setBridgeConnected] = useState(false);
+  const [permissionMessage, setPermissionMessage] = useState('');
 
   const checkCapabilities = async () => {
     setChecking(true);
+    setBridgeConnected(getDeviceBridgeStatus().connected);
     const notification = typeof window !== 'undefined' && 'Notification' in window;
     const speech = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
     const media = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
@@ -62,6 +66,22 @@ export const DevicePage: React.FC<DevicePageProps> = ({ activeTheme, onBackToAss
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-white">Permission actions</h2>
+            <p className="text-xs text-slate-400 mt-1">{bridgeConnected ? 'Android bridge connected.' : 'Browser-only mode. Native phone control is not connected.'}</p>
+          </div>
+          <span className={`text-[10px] px-2 py-1 rounded-full border ${bridgeConnected ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'}`}>{bridgeConnected ? 'ANDROID' : 'BROWSER'}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={async () => { try { await navigator.mediaDevices?.getUserMedia({audio:true}); setPermissionMessage('Microphone permission granted.'); } catch { setPermissionMessage('Microphone permission was denied or unavailable.'); } }} className="px-3 py-2 rounded-xl text-xs font-semibold text-white border border-white/10 hover:bg-white/[0.06]">Allow microphone</button>
+          <button onClick={async () => { if (!('Notification' in window)) { setPermissionMessage('Notifications are unavailable in this browser.'); return; } const p = await Notification.requestPermission(); setPermissionMessage(`Notification permission: ${p}.`); }} className="px-3 py-2 rounded-xl text-xs font-semibold text-white border border-white/10 hover:bg-white/[0.06]">Allow notifications</button>
+          <button onClick={() => { if ('Notification' in window && Notification.permission === 'granted') new Notification('Nexus', { body:'Notification test successful.' }); setPermissionMessage(Notification.permission === 'granted' ? 'Notification sent.' : 'Allow notifications first.'); }} className="px-3 py-2 rounded-xl text-xs font-semibold text-white border border-white/10 hover:bg-white/[0.06]">Test notification</button>
+        </div>
+        {permissionMessage && <p className="text-xs text-cyan-300">{permissionMessage}</p>}
       </div>
 
       <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
