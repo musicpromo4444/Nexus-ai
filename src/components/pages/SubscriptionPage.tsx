@@ -27,19 +27,13 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({
   soundEnabled,
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [credits, setCredits] = useState<number>(18450);
-  const [isAddingCredits, setIsAddingCredits] = useState<boolean>(false);
-  const [autoRefill, setAutoRefill] = useState<boolean>(true);
+  const [credits] = useState<number | null>(null);
+  const [isAddingCredits] = useState<boolean>(false);
+  const [autoRefill, setAutoRefill] = useState<boolean>(false);
   const maxCredits = 25000;
 
   const handleAddCredits = () => {
-    if (soundEnabled) playUiSound('activate');
-    setIsAddingCredits(true);
-    setTimeout(() => {
-      setCredits((prev) => Math.min(prev + 5000, 30000));
-      setIsAddingCredits(false);
-      if (soundEnabled) playUiSound('glow');
-    }, 600);
+    if (soundEnabled) playUiSound('click');
   };
 
   const plans = [
@@ -164,35 +158,20 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({
               <span>Active Compute Credit Allocation</span>
             </div>
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl sm:text-4xl font-extrabold text-white font-mono">
-                {credits.toLocaleString()}
-              </span>
-              <span className="text-sm text-slate-400 font-medium">
-                / {maxCredits.toLocaleString()} monthly units
-              </span>
+              <span className="text-3xl sm:text-4xl font-extrabold text-white font-mono">Not connected</span>
+              <span className="text-sm text-slate-400 font-medium">Payment/account service not connected</span>
             </div>
 
             {/* Visual Credit Bar */}
-            <div className="w-full max-w-md h-2.5 rounded-full bg-white/10 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min((credits / maxCredits) * 100, 100)}%`,
-                  background: activeTheme.gradient,
-                }}
-              />
-            </div>
-
-            <p className="text-xs text-slate-400">
-              Billing period resets in <strong>14 days</strong>. Auto-refill activates when balance drops below 2,000 units.
-            </p>
+            <div className="w-full max-w-md h-2.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full w-0" /></div>
+            <p className="text-xs text-slate-400">Connect an account and payment provider before credits, billing, or auto-refill can be shown as active.</p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleAddCredits}
-              disabled={isAddingCredits}
+              disabled={true}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs text-white transition-all shadow-md"
               style={{
                 background: activeTheme.gradient,
@@ -200,14 +179,11 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({
               }}
             >
               <Zap className={`w-4 h-4 ${isAddingCredits ? 'animate-bounce' : ''}`} />
-              <span>{isAddingCredits ? 'Allocating Credits...' : 'Top-Up +5,000 Credits ($5)'}</span>
+              <span>{isAddingCredits ? 'Allocating Credits...' : 'Top-Up unavailable'}</span>
             </button>
 
             <button
-              onClick={() => {
-                if (soundEnabled) playUiSound('toggle');
-                setAutoRefill(!autoRefill);
-              }}
+              onClick={() => { if (soundEnabled) playUiSound('click'); }}
               className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${autoRefill ? 'text-emerald-400' : 'text-slate-500'}`} />
