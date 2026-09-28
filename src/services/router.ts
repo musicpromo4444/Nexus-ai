@@ -111,6 +111,11 @@ export function detectLocalUIAction(prompt: string): LocalAction | undefined {
     };
   }
 
+  const completeTask = prompt.match(/(?:complete|finish|done with)\s+(?:task\s*)?(\d+)/i);
+  if (completeTask) return { type:'COMPLETE_TASK', payload:{ index:Number(completeTask[1])-1 }, executed:false };
+  const deleteTask = prompt.match(/(?:delete|remove)\s+(?:task\s*)?(\d+)/i);
+  if (deleteTask) return { type:'DELETE_TASK', payload:{ index:Number(deleteTask[1])-1 }, executed:false };
+
   // 6. Add task
   const addTaskMatch = prompt.match(/(?:add task|new task|create task|todo:?)\s+(.+)/i);
   if (addTaskMatch && addTaskMatch[1]) {
