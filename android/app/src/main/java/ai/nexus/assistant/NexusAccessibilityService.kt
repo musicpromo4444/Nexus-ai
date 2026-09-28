@@ -7,6 +7,8 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.GestureDescription
 import android.graphics.Path
+import android.view.GestureDescription
+import android.graphics.Path
 
 class NexusAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
@@ -27,6 +29,15 @@ class NexusAccessibilityService : AccessibilityService() {
             }
         }
     }
+    fun tap(x: Float, y: Float): Boolean {
+        val path = Path().apply { moveTo(x, y) }
+        val gesture = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, 80)).build()
+        return dispatchGesture(gesture, null, null)
+    }
+
+    fun scrollForward(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) ?: false
+    fun scrollBackward(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) ?: false
+
     override fun onInterrupt() {}
 
     fun describeScreen(): List<ScreenElement> {
