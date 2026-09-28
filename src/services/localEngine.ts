@@ -1,18 +1,13 @@
 import { DYNAMIC_GRADIENT_THEMES } from '../constants/themes';
 import { GradientTheme, InteractionMode, LocalAction, LocalTask, ReasoningResult } from '../types';
+import { loadNexusState, saveNexusState } from '../utils/persistence';
 
 // Persistent local task storage in memory & localStorage
 const LOCAL_STORAGE_TASKS_KEY = 'nexus_local_tasks_v1';
 
 export function getLocalTasks(): LocalTask[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_TASKS_KEY);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch {
-    // fallback
-  }
+  const saved = loadNexusState<LocalTask[] | null>(LOCAL_STORAGE_TASKS_KEY, null);
+  if (saved) return saved;
   return [
     { id: 't-1', title: 'Audit local indexed storage boundary', completed: true, createdAt: '10:00' },
     { id: 't-2', title: 'Optimize on-device vector cache indices', completed: false, createdAt: '11:30' },
@@ -21,11 +16,7 @@ export function getLocalTasks(): LocalTask[] {
 }
 
 export function saveLocalTasks(tasks: LocalTask[]): void {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_TASKS_KEY, JSON.stringify(tasks));
-  } catch {
-    // ignore
-  }
+  saveNexusState(LOCAL_STORAGE_TASKS_KEY, tasks);
 }
 
 export function addLocalTask(title: string): LocalTask[] {
@@ -209,6 +200,23 @@ export async function executeLocalEngine(params: {
         autoTriggered: false,
         latencyMs,
         tokensUsed: 0,
+        localAction: { ...action, executed: true },
+      };
+    }
+
+    if (action.type === 'SET_REMINDER') {
+      const title = String(action.payload?.title || 'Nexus reminder').trim();
+      const minutes = Math.max(1, Number(action.payload?.minutes || 1));
+      const reminder = { id: `rem-${Date.now()}`, title, dueAt: new Date(Date.now() + minutes * 60000).toISOString(), createdAt: new Date().toISOString() };
+      const reminders = loadNexusState<any[]>('nexus_reminders', []);
+      saveNexusState('nexus_reminders', [reminder, ...reminders]);
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        void Notification.requestPermission();
+      }
+      return {
+        text: `Reminder set for **${minutes} minute(s)** from now: **"${title}"**.`,
+        effectiveTier: 'quick', executionTier: 'local', routeReason: 'Local On-Device Mode: Reminder Scheduler',
+        autoTriggered: false, latencyMs: Math.max(8, Math.round(performance.now() - startTime) + 4), tokensUsed: 0,
         localAction: { ...action, executed: true },
       };
     }
