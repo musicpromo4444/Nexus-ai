@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { GradientTheme } from '../../types';
 import { playUiSound } from '../../utils/audio';
+import { loadNexusState, saveNexusState } from '../../utils/persistence';
 
 interface ProfilePageProps {
   activeTheme: GradientTheme;
@@ -30,9 +31,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onBackToAssistant,
   soundEnabled,
 }) => {
-  const [userName, setUserName] = useState<string>('Alex Rivera');
-  const [userTitle, setUserTitle] = useState<string>('Principal Systems Architect');
-  const [userEmail] = useState<string>('reply.stagepro@gmail.com');
+  const [userName, setUserName] = useState<string>(() => loadNexusState('nexus_profile_name', ''));
+  const [userTitle, setUserTitle] = useState<string>(() => loadNexusState('nexus_profile_title', ''));
+  const [userEmail, setUserEmail] = useState<string>(() => loadNexusState('nexus_profile_email', ''));
   const [autoVoiceTranscription, setAutoVoiceTranscription] = useState<boolean>(true);
   const [soundFeedback, setSoundFeedback] = useState<boolean>(soundEnabled);
   const [hardwareAcceleration, setHardwareAcceleration] = useState<boolean>(true);
@@ -42,12 +43,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const handleSavePreferences = () => {
     if (soundEnabled) playUiSound('activate');
+    saveNexusState('nexus_profile_name', userName.trim());
+    saveNexusState('nexus_profile_title', userTitle.trim());
+    saveNexusState('nexus_profile_email', userEmail.trim());
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2500);
   };
 
   const handleClearCache = () => {
     if (soundEnabled) playUiSound('toggle');
+    try {
+      ['nexus_chat_sessions','nexus_chat_messages','nexus_local_tasks_v1','nexus_reminders'].forEach((key) => localStorage.removeItem(key));
+    } catch {}
     setClearedCache(true);
     setTimeout(() => setClearedCache(false), 3000);
   };
