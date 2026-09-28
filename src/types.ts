@@ -8,7 +8,7 @@ export type AppPage =
   | 'profile'
   | 'memory-routines'
   | 'neural-modules'
-  | 'settings';
+  | 'settings'\n  | 'device';
 
 export type ComputeTier = 'quick' | 'deep';
 
