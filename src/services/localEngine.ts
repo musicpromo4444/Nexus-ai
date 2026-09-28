@@ -5,7 +5,7 @@ import { loadNexusState, saveNexusState } from '../utils/persistence';
 // Persistent local task storage in memory & localStorage
 const LOCAL_STORAGE_TASKS_KEY = 'nexus_local_tasks_v1';
 
-const NATIVE_ACTIONS = new Set(['open_app','make_call','send_message','set_alarm','control_media','read_screen','tap_screen']);
+const NATIVE_ACTIONS = new Set(['open_app','make_call','send_message','set_alarm','control_media','read_screen','tap_screen','set_reminder','run_routine']);
 
 const SENSITIVE_ACTIONS = new Set(['make_call','send_message','set_alarm','tap_screen']);
 
@@ -259,7 +259,14 @@ export async function executeLocalEngine(params: {
     if (action.type === 'SET_REMINDER') {
       const title = String(action.payload?.title || 'Nexus reminder').trim();
       const minutes = Math.max(1, Number(action.payload?.minutes || 1));
-      const reminder = { id: `rem-${Date.now()}`, title, dueAt: new Date(Date.now() + minutes * 60000).toISOString(), createdAt: new Date().toISOString() };
+      const reminder = { id: `rem-${Date.now()}`, title, dueAt: new Date(Date.now() + minutes * 60000).toISOString(), createdAt: new Date().toISOString(), firedAt: null as string | null };
+      const bridge = getDeviceBridgeStatus().connected;
+      if (bridge) {
+        const native = await requestNativeDeviceAction('set_reminder', { title, dueAt: reminder.dueAt });
+        if (native.success) {
+          return { text: `Reminder scheduled on your Android device: **"${title}"** in **${minutes} minute(s)**.`, effectiveTier:'quick', executionTier:'local', routeReason:'Android Background Reminder', autoTriggered:false, latencyMs:Math.max(8,Math.round(performance.now()-startTime)), tokensUsed:0, localAction:{...action,executed:true} };
+        }
+      }
       const reminders = loadNexusState<any[]>('nexus_reminders', []);
       saveNexusState('nexus_reminders', [reminder, ...reminders]);
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
