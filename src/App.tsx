@@ -497,6 +497,8 @@ export default function App() {
                 computeTier={computeTier}
                 onToggleComputeTier={setComputeTier}
                 autoDetectReasoning={autoDetectReasoning}
+                backgroundListening={backgroundListening}
+                onToggleBackgroundListening={() => setBackgroundListening((value) => !value)}
               />
             ) : (
               <ChatInterface
