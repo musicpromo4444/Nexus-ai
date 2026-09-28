@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 
 class NexusScheduler(private val context: Context) {
+    fun scheduleIn(id: String, title: String, delayMillis: Long): Boolean = schedule(id, title, System.currentTimeMillis() + delayMillis)
+
     fun schedule(id: String, title: String, triggerAtMillis: Long): Boolean {
         val alarm = context.getSystemService(AlarmManager::class.java)
         val intent = Intent(context, NexusAlarmReceiver::class.java).putExtra("title", title)
