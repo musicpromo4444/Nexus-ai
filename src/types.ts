@@ -16,6 +16,21 @@ export type ComputeTier = 'quick' | 'deep';
 
 export type ExecutionTier = 'local' | 'cloud';
 
+export type NativeDeviceAction =
+  | 'open_app'
+  | 'make_call'
+  | 'send_message'
+  | 'set_alarm'
+  | 'control_media'
+  | 'read_screen'
+  | 'tap_screen';
+
+export interface DeviceBridgeStatus {
+  connected: boolean;
+  platform: 'browser' | 'android';
+  permissions: string[];
+}
+
 export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
 
 export interface LocalAction {
