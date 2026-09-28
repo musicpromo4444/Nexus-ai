@@ -47,6 +47,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [audioLevel, setAudioLevel] = useState<number>(0.2);
   const [waveformBars, setWaveformBars] = useState<number[]>(new Array(24).fill(10));
+  const recognitionRef = useRef<any>(null);
   const audioAnimationRef = useRef<number | null>(null);
 
   // Quick Voice Prompts
@@ -107,8 +108,16 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   }, [voiceState]);
 
   // Voice recognition and activation
+  const stopRecognition = () => {
+    try { recognitionRef.current?.stop?.(); } catch { /* ignore */ }
+    recognitionRef.current = null;
+  };
+
+  useEffect(() => () => stopRecognition(), []);
+
   const handleToggleListening = () => {
     if (voiceState === 'listening') {
+      stopRecognition();
       setVoiceState('idle');
       if (soundEnabled) playUiSound('toggle');
     } else {
@@ -125,6 +134,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
       if (SpeechRecognition && !isMuted) {
         try {
           const recognition = new SpeechRecognition();
+          recognitionRef.current = recognition;
           recognition.continuous = false;
           recognition.interimResults = true;
           recognition.lang = 'en-US';
@@ -136,14 +146,15 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
           };
 
           recognition.onend = () => {
+            recognitionRef.current = null;
             setVoiceState('processing');
             setTimeout(() => {
-              processQuery(transcript || 'Nexus, status report on today');
-            }, 500);
+              setTranscript((latest) => latest);
+            }, 0);
           };
 
           recognition.onerror = () => {
-            // Fallback gracefully to simulated query
+            recognitionRef.current = null;
             fallbackSimulatedVoice();
           };
 
