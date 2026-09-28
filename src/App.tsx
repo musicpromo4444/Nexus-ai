@@ -22,6 +22,7 @@ import { CreationPage } from './components/pages/CreationPage';
 import { ProfilePage } from './components/pages/ProfilePage';
 import { MemoryRoutinesPage } from './components/pages/MemoryRoutinesPage';
 import { SettingsPage } from './components/pages/SettingsPage';
+import { DevicePage } from './components/pages/DevicePage';
 import { playUiSound } from './utils/audio';
 import { loadNexusState, saveNexusState } from './utils/persistence';
 import { dispatchHybridReasoning } from './services/reasoningEngine';
@@ -381,6 +382,10 @@ export default function App() {
               }}
               soundEnabled={soundEnabled}
             />
+          )}
+
+          {activePage === 'device' && (
+            <DevicePage activeTheme={activeTheme} onBackToAssistant={() => setActivePage('assistant')} soundEnabled={soundEnabled} />
           )}
 
           {activePage === 'settings' && (
