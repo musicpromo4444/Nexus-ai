@@ -8,7 +8,8 @@ export type AppPage =
   | 'profile'
   | 'memory-routines'
   | 'neural-modules'
-  | 'settings'\n  | 'device';
+  | 'settings'
+  | 'device';
 
 export type ComputeTier = 'quick' | 'deep';
 
@@ -17,7 +18,7 @@ export type ExecutionTier = 'local' | 'cloud';
 export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
 
 export interface LocalAction {
-  type: 'CHANGE_THEME' | 'TOGGLE_SOUND' | 'SWITCH_MODE' | 'CLEAR_CHAT' | 'ADD_TASK' | 'SET_REMINDER' | 'OPEN_PAGE' | 'NONE';
+  type: 'CHANGE_THEME' | 'TOGGLE_SOUND' | 'SWITCH_MODE' | 'CLEAR_CHAT' | 'ADD_TASK' | 'SET_REMINDER' | 'OPEN_PAGE' | 'OPEN_URL' | 'NONE';
   payload?: any;
   executed?: boolean;
 }
