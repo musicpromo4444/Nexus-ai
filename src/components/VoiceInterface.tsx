@@ -48,6 +48,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   const [audioLevel, setAudioLevel] = useState<number>(0.2);
   const [waveformBars, setWaveformBars] = useState<number[]>(new Array(24).fill(10));
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<string>('');
   const audioAnimationRef = useRef<number | null>(null);
 
   // Quick Voice Prompts
@@ -108,6 +109,8 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   }, [voiceState]);
 
   // Voice recognition and activation
+  useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
+
   const stopRecognition = () => {
     try { recognitionRef.current?.stop?.(); } catch { /* ignore */ }
     recognitionRef.current = null;
@@ -142,6 +145,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
           recognition.onresult = (event: any) => {
             const current = event.resultIndex;
             const text = event.results[current][0].transcript;
+            transcriptRef.current = text;
             setTranscript(text);
           };
 
@@ -149,8 +153,8 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
             recognitionRef.current = null;
             setVoiceState('processing');
             setTimeout(() => {
-              setTranscript((latest) => latest);
-            }, 0);
+              processQuery(transcriptRef.current || 'Nexus, status report on today');
+            }, 250);
           };
 
           recognition.onerror = () => {
