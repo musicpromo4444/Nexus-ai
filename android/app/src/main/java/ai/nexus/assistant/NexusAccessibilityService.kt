@@ -38,6 +38,10 @@ class NexusAccessibilityService : AccessibilityService() {
     fun scrollForward(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) ?: false
     fun scrollBackward(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) ?: false
 
+    fun screenSummary(): String = describeScreen().take(80).joinToString(" | ") { item ->
+        listOf(item.text, item.description).firstOrNull { it.isNotBlank() }.orEmpty()
+    }
+
     override fun onInterrupt() {}
 
     fun describeScreen(): List<ScreenElement> {
