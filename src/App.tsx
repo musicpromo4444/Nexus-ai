@@ -23,6 +23,7 @@ import { ProfilePage } from './components/pages/ProfilePage';
 import { MemoryRoutinesPage } from './components/pages/MemoryRoutinesPage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { playUiSound } from './utils/audio';
+import { loadNexusState, saveNexusState } from './utils/persistence';
 import { dispatchHybridReasoning } from './services/reasoningEngine';
 
 const INITIAL_SESSIONS: ChatSession[] = [
@@ -152,33 +153,24 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   // Chat sessions & active messages
-  const [sessions, setSessions] = useState<ChatSession[]>(INITIAL_SESSIONS);
+  const [sessions, setSessions] = useState<ChatSession[]>(() => loadNexusState('nexus_chat_sessions', INITIAL_SESSIONS));
   const [activeSessionId, setActiveSessionId] = useState<string>('session-1');
-  const [sessionMessages, setSessionMessages] = useState<Record<string, ChatMessage[]>>({
+  const [sessionMessages, setSessionMessages] = useState<Record<string, ChatMessage[]>>(() => loadNexusState('nexus_chat_messages', {
     'session-1': INITIAL_MESSAGES,
-    'session-2': [
-      {
-        id: 's2-1',
-        sender: 'assistant',
-        text: 'Session loaded: Offline Cache & Privacy Architecture. Local encryption is active.',
-        timestamp: '12:15',
-        mode: 'offline-text',
-        latencyMs: 11,
-      },
-    ],
-    'session-3': [
-      {
-        id: 's3-1',
-        sender: 'assistant',
-        text: 'Session loaded: Local Script Automation. 4 scripts ready in the offline vault.',
-        timestamp: 'Yesterday',
-        mode: 'offline-text',
-        latencyMs: 9,
-      },
-    ],
-  });
+    'session-2': [{ id: 's2-1', sender: 'assistant', text: 'Session loaded: Offline Cache & Privacy Architecture. Local encryption is active.', timestamp: '12:15', mode: 'offline-text', latencyMs: 11 }],
+    'session-3': [{ id: 's3-1', sender: 'assistant', text: 'Session loaded: Local Script Automation. 4 scripts ready in the offline vault.', timestamp: 'Yesterday', mode: 'offline-text', latencyMs: 9 }],
+  }));
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+
+  // Persist conversations locally so Nexus survives refreshes and app restarts.
+  useEffect(() => {
+    saveNexusState('nexus_chat_sessions', sessions);
+  }, [sessions]);
+
+  useEffect(() => {
+    saveNexusState('nexus_chat_messages', sessionMessages);
+  }, [sessionMessages]);
 
   // Active messages list
   const currentMessages = sessionMessages[activeSessionId] || [];
