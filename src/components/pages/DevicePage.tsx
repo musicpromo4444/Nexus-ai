@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Smartphone, Mic, Bell, ShieldCheck, CheckCircle2, XCircle, ChevronLeft, RefreshCw, Lock } from 'lucide-react';
 import { GradientTheme } from '../../types';
 import { playUiSound } from '../../utils/audio';
-import { getDeviceBridgeStatus } from '../../services/localEngine';
+import { getDeviceBridgeStatus, requestNativeDeviceAction } from '../../services/localEngine';
 
 interface DevicePageProps {
   activeTheme: GradientTheme;
@@ -17,6 +17,7 @@ export const DevicePage: React.FC<DevicePageProps> = ({ activeTheme, onBackToAss
   const [checking, setChecking] = useState(false);
   const [bridgeConnected, setBridgeConnected] = useState(false);
   const [permissionMessage, setPermissionMessage] = useState('');
+  const [nativeActionMessage, setNativeActionMessage] = useState('');
 
   const checkCapabilities = async () => {
     setChecking(true);
@@ -82,6 +83,17 @@ export const DevicePage: React.FC<DevicePageProps> = ({ activeTheme, onBackToAss
           <button onClick={() => { if ('Notification' in window && Notification.permission === 'granted') new Notification('Nexus', { body:'Notification test successful.' }); setPermissionMessage(('Notification' in window && Notification.permission === 'granted') ? 'Notification sent.' : 'Allow notifications first.'); }} className="px-3 py-2 rounded-xl text-xs font-semibold text-white border border-white/10 hover:bg-white/[0.06]">Test notification</button>
         </div>
         {permissionMessage && <p className="text-xs text-cyan-300">{permissionMessage}</p>}
+      </div>
+
+      <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+        <div>
+          <h2 className="text-sm font-bold text-white">Native device actions</h2>
+          <p className="text-xs text-slate-400 mt-1">These controls only execute when the Android bridge is actually connected and the device grants the required permission.</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <button key="open_app" disabled={!bridgeConnected} onClick={async () => { const result = await requestNativeDeviceAction('open_app', {}); setNativeActionMessage(result.success ? 'Open app executed.' : result.reason); }} className="px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.06]">Open app</button><button key="make_call" disabled={!bridgeConnected} onClick={async () => { const result = await requestNativeDeviceAction('make_call', {}); setNativeActionMessage(result.success ? 'Make call executed.' : result.reason); }} className="px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.06]">Make call</button><button key="send_message" disabled={!bridgeConnected} onClick={async () => { const result = await requestNativeDeviceAction('send_message', {}); setNativeActionMessage(result.success ? 'Send message executed.' : result.reason); }} className="px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.06]">Send message</button><button key="set_alarm" disabled={!bridgeConnected} onClick={async () => { const result = await requestNativeDeviceAction('set_alarm', {}); setNativeActionMessage(result.success ? 'Set alarm executed.' : result.reason); }} className="px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.06]">Set alarm</button><button key="control_media" disabled={!bridgeConnected} onClick={async () => { const result = await requestNativeDeviceAction('control_media', {}); setNativeActionMessage(result.success ? 'Media executed.' : result.reason); }} className="px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.06]">Media</button><button key="read_screen" disabled={!bridgeConnected} onClick={async () => { const result = await requestNativeDeviceAction('read_screen', {}); setNativeActionMessage(result.success ? 'Read screen executed.' : result.reason); }} className="px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.06]">Read screen</button><button key="tap_screen" disabled={!bridgeConnected} onClick={async () => { const result = await requestNativeDeviceAction('tap_screen', {}); setNativeActionMessage(result.success ? 'Tap screen executed.' : result.reason); }} className="px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/[0.06]">Tap screen</button>
+        </div>
+        {nativeActionMessage && <p className="text-xs text-cyan-300">{nativeActionMessage}</p>}
       </div>
 
       <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
