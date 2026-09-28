@@ -18,6 +18,7 @@ import {
 import { GradientTheme, ComputeTier } from '../../types';
 import { DYNAMIC_GRADIENT_THEMES } from '../../constants/themes';
 import { playUiSound } from '../../utils/audio';
+import { loadNexusState, saveNexusState } from '../../utils/persistence';
 
 interface SettingsPageProps {
   activeTheme: GradientTheme;
@@ -44,8 +45,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onToggleComputeTier,
   onOpenThemeCustomizer,
 }) => {
-  const [offlineGracePeriod, setOfflineGracePeriod] = useState<number>(1200);
-  const [telemetryOptIn, setTelemetryOptIn] = useState<boolean>(false);
+  const [offlineGracePeriod, setOfflineGracePeriod] = useState<number>(() => loadNexusState('nexus_offline_grace_period', 1200));
+  const [telemetryOptIn, setTelemetryOptIn] = useState<boolean>(() => loadNexusState('nexus_telemetry_opt_in', false));
+  const [backgroundListening, setBackgroundListening] = useState<boolean>(() => loadNexusState('nexus_background_listening', false));
+
+  const updateBackgroundListening = (enabled: boolean) => {
+    setBackgroundListening(enabled);
+    saveNexusState('nexus_background_listening', enabled);
+  };
+
+  saveNexusState('nexus_offline_grace_period', offlineGracePeriod);
+  saveNexusState('nexus_telemetry_opt_in', telemetryOptIn);
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 max-w-5xl mx-auto w-full space-y-8 animate-in fade-in duration-300">
@@ -148,6 +158,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               </button>
             );
           })}
+        </div>
+      </div>
+
+
+      <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-white">Background Voice Assistant</h3>
+            <p className="text-xs text-slate-400 mt-1">Remember your preference now. Continuous background microphone access requires the future Android app and explicit permission.</p>
+          </div>
+          <button onClick={() => updateBackgroundListening(!backgroundListening)} className={`px-3 py-1.5 rounded-xl text-xs font-semibold border ${backgroundListening ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-white/10 text-slate-400 border-white/10'}`}>
+            {backgroundListening ? 'Enabled' : 'Off'}
+          </button>
         </div>
       </div>
 
