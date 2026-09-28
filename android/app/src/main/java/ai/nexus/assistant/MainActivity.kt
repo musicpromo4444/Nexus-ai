@@ -9,11 +9,6 @@ import android.provider.Settings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.JavascriptInterface
-import android.webkit.JavascriptInterface
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.webkit.WebSettingsCompat
-import androidx.webkit.WebViewFeature
 import android.content.Intent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -57,16 +52,9 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        webView = WebView(this)
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.mediaPlaybackRequiresUserGesture = false
-        webView.webViewClient = WebViewClient()
-        webView.addJavascriptInterface(NexusBridge(), "NexusAndroid")
-        webView.loadUrl("https://nexus-ai-three-neon.vercel.app/")
+        webView = buildNexusShell()
         setContentView(webView)
 
-        setContentView(buildNexusShell())
         scheduler = NexusScheduler(this)
         deviceActions = NexusDeviceActions(this)
         accountBridge = NexusAccountBridge(this)
@@ -97,13 +85,7 @@ class MainActivity : Activity() {
         web.settings.domStorageEnabled = true
         web.settings.mediaPlaybackRequiresUserGesture = false
         web.webViewClient = WebViewClient()
-        web.addJavascriptInterface(object {
-            @JavascriptInterface fun getPlatform() = "android"
-            @JavascriptInterface fun openApp(packageName: String) = this@MainActivity.openApp(packageName)
-            @JavascriptInterface fun makeCall(number: String) = this@MainActivity.makeCall(number)
-            @JavascriptInterface fun sendMessage(number: String, message: String) = this@MainActivity.sendSms(number, message)
-            @JavascriptInterface fun openSettings() = this@MainActivity.openSystemSettings()
-        }, "NexusAndroid")
+        web.addJavascriptInterface(NexusBridge(), "NexusAndroid")
         web.loadUrl("https://nexus-ai-three-neon.vercel.app/")
         return web
     }
