@@ -19,7 +19,7 @@ export type ExecutionTier = 'local' | 'cloud';
 export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
 
 export interface LocalAction {
-  type: 'CHANGE_THEME' | 'TOGGLE_SOUND' | 'SWITCH_MODE' | 'CLEAR_CHAT' | 'ADD_TASK' | 'SET_REMINDER' | 'OPEN_PAGE' | 'OPEN_URL' | 'NONE';
+  type: 'CHANGE_THEME' | 'TOGGLE_SOUND' | 'SWITCH_MODE' | 'CLEAR_CHAT' | 'ADD_TASK' | 'SET_REMINDER' | 'OPEN_PAGE' | 'OPEN_URL' | 'COMPLETE_TASK' | 'DELETE_TASK' | 'NONE';
   payload?: any;
   executed?: boolean;
 }
