@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { GradientTheme } from '../../types';
 import { playUiSound } from '../../utils/audio';
+import { loadNexusState, saveNexusState } from '../../utils/persistence';
 
 interface MemoryItem {
   id: string;
@@ -127,24 +128,10 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
   soundEnabled,
 }) => {
   // Memories state with localStorage persistence
-  const [memories, setMemories] = useState<MemoryItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('nexus_memories_vault');
-      return saved ? JSON.parse(saved) : INITIAL_MEMORIES;
-    } catch {
-      return INITIAL_MEMORIES;
-    }
-  });
+  const [memories, setMemories] = useState<MemoryItem[]>(() => loadNexusState('nexus_memories_vault', INITIAL_MEMORIES));
 
   // Routines state with localStorage persistence
-  const [routines, setRoutines] = useState<RoutineItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('nexus_custom_routines');
-      return saved ? JSON.parse(saved) : INITIAL_ROUTINES;
-    } catch {
-      return INITIAL_ROUTINES;
-    }
-  });
+  const [routines, setRoutines] = useState<RoutineItem[]>(() => loadNexusState('nexus_custom_routines', INITIAL_ROUTINES));
 
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [isAddingMemory, setIsAddingMemory] = useState(false);
@@ -162,22 +149,14 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
   const [newRoutineDesc, setNewRoutineDesc] = useState('');
   const [newRoutinePrompt, setNewRoutinePrompt] = useState('');
 
-  // Persist memories
+  // Persist memories safely across refreshes.
   useEffect(() => {
-    try {
-      localStorage.setItem('nexus_memories_vault', JSON.stringify(memories));
-    } catch {
-      // ignore
-    }
+    saveNexusState('nexus_memories_vault', memories);
   }, [memories]);
 
-  // Persist routines
+  // Persist routines safely across refreshes.
   useEffect(() => {
-    try {
-      localStorage.setItem('nexus_custom_routines', JSON.stringify(routines));
-    } catch {
-      // ignore
-    }
+    saveNexusState('nexus_custom_routines', routines);
   }, [routines]);
 
   const handleToggleLock = (id: string) => {
