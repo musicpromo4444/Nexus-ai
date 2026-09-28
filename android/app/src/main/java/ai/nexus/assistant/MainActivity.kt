@@ -6,6 +6,11 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import android.content.Intent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -13,6 +18,7 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 
 class MainActivity : Activity() {
+    private lateinit var webView: WebView
     private val commandReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
             val command = intent?.getStringExtra("command") ?: return
@@ -47,6 +53,16 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        webView = WebView(this)
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        webView.settings.mediaPlaybackRequiresUserGesture = false
+        webView.webViewClient = WebViewClient()
+        webView.addJavascriptInterface(NexusBridge(), "NexusAndroid")
+        webView.loadUrl("https://nexus-ai-three-neon.vercel.app/")
+        setContentView(webView)
+
         scheduler = NexusScheduler(this)
         deviceActions = NexusDeviceActions(this)
         accountBridge = NexusAccountBridge(this)
@@ -54,6 +70,21 @@ class MainActivity : Activity() {
         registerReceiver(aiReceiver, IntentFilter(VoiceAssistantService.ACTION_AI_RESPONSE), RECEIVER_NOT_EXPORTED)
         requestCorePermissions()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startVoiceService()
+    }
+
+    inner class NexusBridge {
+        @JavascriptInterface fun platform(): String = "android"
+        @JavascriptInterface fun permissions(): String = permissions.joinToString(",") { if (ContextCompat.checkSelfPermission(this@MainActivity, it) == PackageManager.PERMISSION_GRANTED) it else "" }
+        @JavascriptInterface fun openApp(packageName: String): Boolean = this@MainActivity.openApp(packageName)
+        @JavascriptInterface fun makeCall(number: String): Boolean {
+            if (!isSensitiveActionAllowed("make_call")) return false
+            return this@MainActivity.makeCall(number)
+        }
+        @JavascriptInterface fun sendMessage(number: String, message: String): Boolean {
+            if (!isSensitiveActionAllowed("send_message")) return false
+            return this@MainActivity.sendSms(number, message)
+        }
+        @JavascriptInterface fun openSettings(): Boolean = this@MainActivity.openSystemSettings()
     }
 
     private fun requestCorePermissions() {
