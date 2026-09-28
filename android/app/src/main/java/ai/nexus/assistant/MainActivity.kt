@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.JavascriptInterface
@@ -130,6 +132,18 @@ class MainActivity : Activity() {
 
     fun setSensitiveActionApproval(action: String, allowed: Boolean) {
         securityPrefs.edit().putBoolean("allow_$action", allowed).apply()
+    }
+
+    fun executePhoneAction(action: String, payload: Map<String, String>): Boolean {
+        return when (action) {
+            "open_app" -> openApp(payload["package"] ?: return false)
+            "make_call" -> isSensitiveActionAllowed(action) && makeCall(payload["number"] ?: return false)
+            "send_message" -> isSensitiveActionAllowed(action) && sendSms(payload["number"] ?: return false, payload["message"].orEmpty())
+            "set_alarm", "set_reminder" -> scheduler.schedule(payload["id"] ?: System.currentTimeMillis().toString(), payload["title"] ?: "Nexus reminder", payload["triggerAtMillis"]?.toLongOrNull() ?: (System.currentTimeMillis() + 60000))
+            "control_media" -> deviceActions.mediaPlayPause()
+            "open_settings" -> openSystemSettings()
+            else -> false
+        }
     }
 
     private fun startVoiceService() {
