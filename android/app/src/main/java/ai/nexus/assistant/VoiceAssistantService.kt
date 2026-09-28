@@ -10,6 +10,7 @@ import android.os.PowerManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import org.json.JSONObject
 import androidx.core.app.NotificationCompat
 
 class VoiceAssistantService : Service() {
@@ -40,7 +41,8 @@ class VoiceAssistantService : Service() {
                 override fun onResults(results: android.os.Bundle?) {
                     val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
                     if (text.isNotBlank()) {
-                        sendBroadcast(Intent(ACTION_TRANSCRIPT).setPackage(packageName).putExtra("text", text))
+                        val command = JSONObject().put("type", "voice_transcript").put("text", text).toString()
+                        sendBroadcast(Intent(ACTION_COMMAND).setPackage(packageName).putExtra("command", command))
                     }
                     listening = false
                     restart()
@@ -83,5 +85,5 @@ class VoiceAssistantService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    companion object { const val ACTION_TRANSCRIPT = "ai.nexus.assistant.VOICE_TRANSCRIPT" }
+    companion object { const val ACTION_COMMAND = "ai.nexus.assistant.NEXUS_COMMAND" }
 }
