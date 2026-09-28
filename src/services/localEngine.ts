@@ -7,6 +7,20 @@ const LOCAL_STORAGE_TASKS_KEY = 'nexus_local_tasks_v1';
 
 const NATIVE_ACTIONS = new Set(['open_app','make_call','send_message','set_alarm','control_media','read_screen','tap_screen']);
 
+const SENSITIVE_ACTIONS = new Set(['make_call','send_message','set_alarm','tap_screen']);
+
+export function getNativeActionPermission(action: string) {
+  const bridge = typeof window !== 'undefined' ? (window as any).NexusAndroid : undefined;
+  const permissions = Array.isArray(bridge?.permissions) ? bridge.permissions : [];
+  return { connected: !!bridge, allowed: !!bridge && permissions.includes(action), needsConfirmation: SENSITIVE_ACTIONS.has(action) };
+}
+
+export function confirmNativeAction(action: string): boolean {
+  if (!SENSITIVE_ACTIONS.has(action)) return true;
+  if (typeof window === 'undefined') return false;
+  return window.confirm(`Nexus wants permission to perform: ${action.replace(/_/g, ' ')}. Continue?`);
+}
+
 export function getDeviceBridgeStatus() {
   const androidBridge = typeof window !== 'undefined' && (window as any).NexusAndroid;
   return {
@@ -18,6 +32,10 @@ export function getDeviceBridgeStatus() {
 
 export async function requestNativeDeviceAction(action: string, payload?: unknown) {
   if (!NATIVE_ACTIONS.has(action)) return { success: false, reason: 'Unsupported device action.' };
+  const permission = getNativeActionPermission(action);
+  if (!permission.connected) return { success: false, reason: 'Android device bridge is not connected.' };
+  if (!permission.allowed) return { success: false, reason: 'This device action has not been granted by Android.' };
+  if (permission.needsConfirmation && !confirmNativeAction(action)) return { success: false, reason: 'Action cancelled.' };
   const bridge = typeof window !== 'undefined' ? (window as any).NexusAndroid : undefined;
   if (!bridge || typeof bridge.execute !== 'function') {
     return { success: false, reason: 'Android device bridge is not connected.' };
