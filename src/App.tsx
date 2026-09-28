@@ -236,7 +236,7 @@ export default function App() {
       const assistantMsg: ChatMessage = {
         id: `asst-${Date.now()}`,
         sender: 'assistant',
-        text: `Processed: "${text}". Operating under secure local sandbox parameters.`,
+        text: `I couldn't complete that request because the AI service is unavailable right now. You can still use local actions such as reminders, tasks, time, and settings.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         mode,
         computeTier,
