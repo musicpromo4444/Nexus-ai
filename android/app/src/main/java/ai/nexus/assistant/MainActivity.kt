@@ -6,6 +6,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.webkit.JavascriptInterface
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -63,6 +66,7 @@ class MainActivity : Activity() {
         webView.loadUrl("https://nexus-ai-three-neon.vercel.app/")
         setContentView(webView)
 
+        setContentView(buildNexusShell())
         scheduler = NexusScheduler(this)
         deviceActions = NexusDeviceActions(this)
         accountBridge = NexusAccountBridge(this)
@@ -85,6 +89,23 @@ class MainActivity : Activity() {
             return this@MainActivity.sendSms(number, message)
         }
         @JavascriptInterface fun openSettings(): Boolean = this@MainActivity.openSystemSettings()
+    }
+
+    private fun buildNexusShell(): WebView {
+        val web = WebView(this)
+        web.settings.javaScriptEnabled = true
+        web.settings.domStorageEnabled = true
+        web.settings.mediaPlaybackRequiresUserGesture = false
+        web.webViewClient = WebViewClient()
+        web.addJavascriptInterface(object {
+            @JavascriptInterface fun getPlatform() = "android"
+            @JavascriptInterface fun openApp(packageName: String) = this@MainActivity.openApp(packageName)
+            @JavascriptInterface fun makeCall(number: String) = this@MainActivity.makeCall(number)
+            @JavascriptInterface fun sendMessage(number: String, message: String) = this@MainActivity.sendSms(number, message)
+            @JavascriptInterface fun openSettings() = this@MainActivity.openSystemSettings()
+        }, "NexusAndroid")
+        web.loadUrl("https://nexus-ai-three-neon.vercel.app/")
+        return web
     }
 
     private fun requestCorePermissions() {
