@@ -109,6 +109,15 @@ export const PagesDrawer: React.FC<PagesDrawerProps> = ({
       description: 'Real browser capability checks and permission boundaries',
     },
     {
+      id: 'voice-environment' as AppPage,
+      name: 'Voice Environment',
+      tagline: 'Local sound awareness for clearer conversations',
+      icon: Mic,
+      badge: 'Privacy First',
+      badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+      description: 'Live sound-level check without recording or identifying speakers',
+    },
+    {
       id: 'settings' as AppPage,
       name: 'Settings',
       tagline: 'App configurations',
