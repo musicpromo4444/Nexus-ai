@@ -1,6 +1,9 @@
 package ai.nexus.assistant
 
 import android.content.Context
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.media.AudioManager
 import android.net.Uri
@@ -9,7 +12,7 @@ import android.provider.Settings
 class NexusDeviceActions(private val context: Context) {
     data class ActionResult(val success: Boolean, val reason: String = "")
     private val sensitiveActions = setOf("make_call", "send_message", "tap_screen", "read_screen", "set_alarm")
-    private val supportedActions = setOf("open_app", "make_call", "send_message", "control_media", "open_settings", "set_reminder", "run_routine")
+    private val supportedActions = setOf("open_app", "make_call", "send_message", "control_media", "open_settings", "set_reminder", "set_alarm", "run_routine", "read_screen", "tap_screen", "scroll_forward", "scroll_backward")
     fun supported(action: String): Boolean = action in supportedActions
 
     fun requiresUserConfirmation(action: String): Boolean = action in sensitiveActions
