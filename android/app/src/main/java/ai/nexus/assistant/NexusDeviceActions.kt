@@ -8,8 +8,17 @@ import android.provider.Settings
 
 class NexusDeviceActions(private val context: Context) {
     data class ActionResult(val success: Boolean, val reason: String = "")
+    private val sensitiveActions = setOf("make_call", "send_message", "tap_screen", "read_screen", "set_alarm")
     private val supportedActions = setOf("open_app", "make_call", "send_message", "control_media", "open_settings", "set_reminder", "run_routine")
     fun supported(action: String): Boolean = action in supportedActions
+
+    fun requiresUserConfirmation(action: String): Boolean = action in sensitiveActions
+
+    fun permissionGranted(action: String): Boolean = when (action) {
+        "make_call" -> ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
+        "send_message" -> ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
+        else -> true
+    }
 
     fun executeLocal(action: String, payload: Map<String, String>): ActionResult = when (action) {
         "open_app" -> ActionResult(supported(action), if (supported(action)) "Ready" else "Unsupported")
