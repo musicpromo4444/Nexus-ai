@@ -18,6 +18,9 @@ import androidx.core.app.NotificationCompat
 class VoiceAssistantService : Service() {
     private var recognizer: SpeechRecognizer? = null
     private var listening = false
+    private var awaitingCommand = false
+    private var commandTimeout: Runnable? = null
+    private val wakePhrases = listOf("hey nexus", "okay nexus", "ok nexus", "hey next us")
     private var wakeLock: PowerManager.WakeLock? = null
     private val endpoint = "https://nexus-ai-three-neon.vercel.app/api/chat"
     private val channelId = "nexus_voice"
@@ -43,11 +46,7 @@ class VoiceAssistantService : Service() {
                 override fun onError(error: Int) { listening = false; restart() }
                 override fun onResults(results: android.os.Bundle?) {
                     val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-                    if (text.isNotBlank()) {
-                        val command = JSONObject().put("type", "voice_transcript").put("text", text).toString()
-                        sendBroadcast(Intent(ACTION_COMMAND).setPackage(packageName).putExtra("command", command))
-                        Thread { requestAi(text) }.start()
-                    }
+                    if (text.isNotBlank()) handleSpeech(text)
                     listening = false
                     restart()
                 }
@@ -60,6 +59,35 @@ class VoiceAssistantService : Service() {
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
         recognizer?.startListening(intent)
+    }
+
+    private fun handleSpeech(raw: String) {
+        val text = raw.trim()
+        val normalized = text.lowercase().replace(Regex("[^a-z0-9\\s]"), " ").replace(Regex("\\s+"), " ").trim()
+        val wake = wakePhrases.firstOrNull { normalized == it || normalized.startsWith("$it ") }
+        if (wake != null) {
+            val commandText = normalized.removePrefix(wake).trim()
+            if (commandText.isNotBlank()) {
+                dispatchCommand(commandText)
+            } else {
+                awaitingCommand = true
+                commandTimeout?.let { android.os.Handler(mainLooper).removeCallbacks(it) }
+                commandTimeout = Runnable { awaitingCommand = false }
+                android.os.Handler(mainLooper).postDelayed(commandTimeout!!, 8000)
+            }
+            return
+        }
+        if (awaitingCommand) {
+            awaitingCommand = false
+            commandTimeout?.let { android.os.Handler(mainLooper).removeCallbacks(it) }
+            dispatchCommand(text)
+        }
+    }
+
+    private fun dispatchCommand(text: String) {
+        val command = JSONObject().put("type", "voice_transcript").put("text", text).toString()
+        sendBroadcast(Intent(ACTION_COMMAND).setPackage(packageName).putExtra("command", command))
+        Thread { requestAi(text) }.start()
     }
 
     private fun requestAi(text: String) {
@@ -98,6 +126,7 @@ class VoiceAssistantService : Service() {
             .build()
 
     override fun onDestroy() {
+        commandTimeout?.let { android.os.Handler(mainLooper).removeCallbacks(it) }
         recognizer?.destroy()
         recognizer = null
         wakeLock?.let { if (it.isHeld) it.release() }
