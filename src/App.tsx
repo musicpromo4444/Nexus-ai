@@ -278,7 +278,7 @@ export default function App() {
     const runDueRoutines = async () => {
       const routines = loadNexusState<any[]>('nexus_custom_routines', []);
       const now = new Date();
-      const todayKey = now.toISOString().slice(0, 10);
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
       let changed = false;
       const updated = [...routines];
       for (let i = 0; i < updated.length; i++) {
@@ -307,7 +307,7 @@ export default function App() {
         const assistantMsg: ChatMessage = {
           id: `routine-${Date.now()}-${i}`,
           sender: 'assistant',
-          text: `**Routine: ${routine.title || 'Scheduled routine'}**\\n\\n${result.text}`,
+          text: `**Routine: ${routine.title || 'Scheduled routine'}**\n\n${result.text}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           mode: 'offline-text',
           computeTier: result.effectiveTier,
