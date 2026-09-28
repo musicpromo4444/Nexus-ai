@@ -208,7 +208,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onClearMessages();
             }}
             className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-            title="Clear Chat History"
+            title="Clear chat"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -216,7 +216,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-10 py-5 space-y-8">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
           const isThoughtsOpen = expandedThoughts[msg.id];
@@ -230,7 +230,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               {/* Avatar Icon */}
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-md ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-md ${
                   isUser
                     ? 'bg-slate-800 text-slate-200 border border-white/10'
                     : 'text-white border border-white/20'
@@ -403,10 +403,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                 {/* Primary Message Body */}
                 <div
-                  className={`p-4 rounded-2xl text-sm leading-relaxed ${
+                  className={`p-4 text-[15px] leading-7 ${
                     isUser
-                      ? 'bg-[#1a1f30] text-white border border-white/10 rounded-tr-sm'
-                      : 'bg-[#121624] text-slate-200 border border-white/10 rounded-tl-sm shadow-lg text-left'
+                      ? 'bg-[#202124] px-4 py-3 rounded-3xl text-white border border-white/[0.04]'
+                      : 'text-slate-100'
                   }`}
                   style={
                     !isUser
