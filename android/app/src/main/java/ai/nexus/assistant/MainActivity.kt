@@ -25,6 +25,7 @@ class MainActivity : Activity() {
     }
 
     private val requestCode = 4101
+    private val securityPrefs by lazy { getSharedPreferences("nexus_security", MODE_PRIVATE) }
     private lateinit var scheduler: NexusScheduler
     private lateinit var deviceActions: NexusDeviceActions
     private lateinit var accountBridge: NexusAccountBridge
@@ -89,6 +90,12 @@ class MainActivity : Activity() {
         if (ContextCompat.checkSelfPermission(this, value) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(value), requestCode)
         }
+    }
+
+    private fun isSensitiveActionAllowed(action: String): Boolean = securityPrefs.getBoolean("allow_$action", false)
+
+    fun setSensitiveActionApproval(action: String, allowed: Boolean) {
+        securityPrefs.edit().putBoolean("allow_$action", allowed).apply()
     }
 
     private fun startVoiceService() {
