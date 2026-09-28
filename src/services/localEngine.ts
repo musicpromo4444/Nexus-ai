@@ -8,11 +8,12 @@ const LOCAL_STORAGE_TASKS_KEY = 'nexus_local_tasks_v1';
 const NATIVE_ACTIONS = new Set(['open_app','make_call','send_message','set_alarm','control_media','read_screen','tap_screen','set_reminder','run_routine']);
 
 const SENSITIVE_ACTIONS = new Set(['make_call','send_message','set_alarm','tap_screen']);
+const CONFIRMATION_REQUIRED = new Set(['make_call','send_message','set_alarm','tap_screen','read_screen']);
 
 export function getNativeActionPermission(action: string) {
   const bridge = typeof window !== 'undefined' ? (window as any).NexusAndroid : undefined;
   const permissions = Array.isArray(bridge?.permissions) ? bridge.permissions : [];
-  return { connected: !!bridge, allowed: !!bridge && permissions.includes(action), needsConfirmation: SENSITIVE_ACTIONS.has(action) };
+  return { connected: !!bridge, allowed: !!bridge && permissions.includes(action), needsConfirmation: CONFIRMATION_REQUIRED.has(action) };
 }
 
 export function confirmNativeAction(action: string): boolean {
