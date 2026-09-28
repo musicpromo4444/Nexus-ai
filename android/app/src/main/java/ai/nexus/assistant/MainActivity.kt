@@ -17,10 +17,16 @@ class MainActivity : Activity() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
             val command = intent?.getStringExtra("command") ?: return
             getSharedPreferences("nexus_commands", MODE_PRIVATE).edit().putString("last_command", command).apply()
+            if (command.contains("\"type\":\"voice_transcript\"")) {
+                val text = command.substringAfter("\"text\":\"").substringBeforeLast("\"").replace("\\\"", "\"")
+                if (text.startsWith("remind me in ", true)) scheduler.scheduleIn(text.hashCode().toString(), text, 60_000L)
+            }
         }
     }
 
     private val requestCode = 4101
+    private lateinit var scheduler: NexusScheduler
+    private lateinit var deviceActions: NexusDeviceActions
     private val permissions = arrayOf(
         Manifest.permission.RECORD_AUDIO,
         Manifest.permission.POST_NOTIFICATIONS,
@@ -31,6 +37,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        scheduler = NexusScheduler(this)
+        deviceActions = NexusDeviceActions(this)
         registerReceiver(commandReceiver, IntentFilter(VoiceAssistantService.ACTION_COMMAND), RECEIVER_NOT_EXPORTED)
         requestCorePermissions()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startVoiceService()
