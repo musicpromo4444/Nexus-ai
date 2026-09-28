@@ -66,6 +66,15 @@ export default function App() {
 
   // Local reminder watcher: fires due reminders while Nexus is open.
   useEffect(() => {
+    const handler = (event: Event) => {
+      const page = (event as CustomEvent<{ page?: string }>).detail?.page;
+      if (page) setActivePage(page as any);
+    };
+    window.addEventListener('nexus:navigate', handler);
+    return () => window.removeEventListener('nexus:navigate', handler);
+  }, []);
+
+  useEffect(() => {
     const tick = () => {
       const reminders = loadNexusState<Array<{ id: string; title: string; dueAt: string; firedAt?: string }>>('nexus_reminders', []);
       const now = Date.now();
