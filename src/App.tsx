@@ -38,17 +38,17 @@ const EMPTY_SESSION: ChatSession = {
 
 export default function App() {
   // Theme state: defaults to Hyper Violet (first of 7 dynamic gradients)
-  const [activeTheme, setActiveTheme] = useState<GradientTheme>(DYNAMIC_GRADIENT_THEMES[0]);
-  const [glowIntensity, setGlowIntensity] = useState<'subtle' | 'vibrant' | 'radiant'>('vibrant');
-  const [ambientAuraEnabled, setAmbientAuraEnabled] = useState<boolean>(true);
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [activeTheme, setActiveTheme] = useState<GradientTheme>(() => loadNexusState('nexus_active_theme', DYNAMIC_GRADIENT_THEMES[0]));
+  const [glowIntensity, setGlowIntensity] = useState<'subtle' | 'vibrant' | 'radiant'>(() => loadNexusState('nexus_glow_intensity', 'vibrant'));
+  const [ambientAuraEnabled, setAmbientAuraEnabled] = useState<boolean>(() => loadNexusState('nexus_ambient_aura', true));
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => loadNexusState('nexus_sound_enabled', true));
   const [isThemeCustomizerOpen, setIsThemeCustomizerOpen] = useState<boolean>(false);
   const [isPagesDrawerOpen, setIsPagesDrawerOpen] = useState<boolean>(false);
   const [activePage, setActivePage] = useState<AppPage>('assistant');
 
   // Hybrid Reasoning Engine state
-  const [computeTier, setComputeTier] = useState<ComputeTier>('deep');
-  const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(true);
+  const [computeTier, setComputeTier] = useState<ComputeTier>(() => loadNexusState('nexus_compute_tier', 'deep'));
+  const [autoDetectReasoning, setAutoDetectReasoning] = useState<boolean>(() => loadNexusState('nexus_auto_detect_reasoning', true));
 
   // Interaction Mode: 'voice' | 'offline-text'
   const [mode, setMode] = useState<InteractionMode>('voice');
@@ -96,6 +96,13 @@ export default function App() {
     const timer = window.setInterval(tick, 15000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => { saveNexusState('nexus_active_theme', activeTheme); }, [activeTheme]);
+  useEffect(() => { saveNexusState('nexus_glow_intensity', glowIntensity); }, [glowIntensity]);
+  useEffect(() => { saveNexusState('nexus_ambient_aura', ambientAuraEnabled); }, [ambientAuraEnabled]);
+  useEffect(() => { saveNexusState('nexus_sound_enabled', soundEnabled); }, [soundEnabled]);
+  useEffect(() => { saveNexusState('nexus_compute_tier', computeTier); }, [computeTier]);
+  useEffect(() => { saveNexusState('nexus_auto_detect_reasoning', autoDetectReasoning); }, [autoDetectReasoning]);
 
   // Persist conversations locally so Nexus survives refreshes and app restarts.
   useEffect(() => {
