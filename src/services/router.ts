@@ -294,7 +294,7 @@ export function routeQuery(params: {
   }
 
   // 5. Local reminder commands
-  const reminder = prompt.match(/(?:remind me|set a reminder)\s+(?:in\s+)?(\\d+)\\s*(minute|minutes|min|hour|hours|hr|hrs)\\s*(?:to|that)\\s+(.+)/i);
+  const reminder = prompt.match(/(?:remind me|set a reminder)\s+(?:in\s+)?(\d+)\\s*(minute|minutes|min|hour|hours|hr|hrs)\\s*(?:to|that)\\s+(.+)/i);
   if (reminder) {
     const amount = Number(reminder[1]);
     const unit = reminder[2].toLowerCase();
