@@ -72,57 +72,70 @@ export async function dispatchHybridReasoning(params: {
     };
   }
 
-  // Step 3: Cloud API Fallback Router
-  // Route to live server LLM endpoint (/api/reason) with live data / search tools and CoT
-  try {
-    const response = await fetch('/api/reason', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        deepReasoning: decision.isDeepReasoning,
-        autoTriggered: decision.autoTriggered,
-        enableSearch: decision.isLiveData,
-        mode,
-      }),
-    });
+  // Step 3: Production cloud inference with timeout + one controlled retry.
+  const requestBody = {
+    prompt,
+    deepReasoning: decision.isDeepReasoning,
+    autoTriggered: decision.autoTriggered,
+    enableSearch: decision.isLiveData,
+    mode,
+  };
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data && data.text) {
+  const requestCloud = async () => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), decision.isLiveData ? 25000 : 18000);
+    try {
+      const response = await fetch('/api/reason', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      const data = await response.json().catch(() => null);
+      if (response.ok && data?.text) {
         return {
           text: data.text,
           thoughts: data.thoughts,
           reasoningSteps: data.reasoningSteps,
           effectiveTier: data.effectiveTier || (decision.isDeepReasoning ? 'deep' : 'quick'),
-          executionTier: 'cloud',
+          executionTier: 'cloud' as const,
           routeReason: data.routeReason || decision.routeReason,
           sources: data.sources,
           autoTriggered: data.autoTriggered ?? decision.autoTriggered,
-          latencyMs: data.latencyMs ?? 650,
-          tokensUsed: data.tokensUsed ?? 220,
+          latencyMs: data.latencyMs,
+          tokensUsed: data.tokensUsed,
           codeSnippet: data.codeSnippet,
         };
       }
+
+      throw new Error(data?.error || `Cloud inference returned HTTP ${response.status}`);
+    } finally {
+      window.clearTimeout(timeout);
     }
-  } catch (err) {
-    console.warn('Cloud API unavailable, failing over to Local On-Device Engine:', err);
+  };
+
+  try {
+    return await requestCloud();
+  } catch (firstError) {
+    console.warn('Nexus cloud inference retry:', firstError);
+    await new Promise((resolve) => window.setTimeout(resolve, 500));
+    try {
+      return await requestCloud();
+    } catch (secondError) {
+      console.warn('Nexus cloud inference unavailable:', secondError);
+    }
   }
 
-  // Step 4: Graceful On-Device Fallback if Cloud API call fails
-  const localFallback = await executeLocalEngine({
-    prompt,
-    activeTheme,
-    soundEnabled,
-    mode,
-  });
-
+  // Dynamic questions must not receive fabricated local answers.
   return {
-    ...localFallback,
-    text: `${localFallback.text}\n\n*(Note: Cloud API was temporarily unreachable; query seamlessly resolved on-device via the Local Fallback Engine).*`,
-    executionTier: 'local',
-    routeReason: 'Local On-Device Engine (Offline Fallback)',
+    text: 'Nexus could not reach the AI service right now. Please try again in a moment.',
+    executionTier: 'cloud',
+    routeReason: 'Cloud API unavailable after retry',
     effectiveTier: decision.isDeepReasoning ? 'deep' : 'quick',
     autoTriggered: decision.autoTriggered,
+    latencyMs: 0,
+    tokensUsed: 0,
   };
+
 }
