@@ -26,109 +26,13 @@ import { playUiSound } from './utils/audio';
 import { loadNexusState, saveNexusState } from './utils/persistence';
 import { dispatchHybridReasoning } from './services/reasoningEngine';
 
-const INITIAL_SESSIONS: ChatSession[] = [
-  {
-    id: 'session-1',
-    title: 'Personal Assistant Initialization',
-    category: 'today',
-    timestamp: 'Just now',
-    messageCount: 3,
-  },
-  {
-    id: 'session-2',
-    title: 'Offline Cache & Privacy Architecture',
-    category: 'today',
-    timestamp: '2 hours ago',
-    messageCount: 8,
-  },
-  {
-    id: 'session-3',
-    title: 'Local Script Automation & Workflow',
-    category: 'earlier',
-    timestamp: 'Yesterday',
-    messageCount: 5,
-  },
-];
-
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: 'm-1',
-    sender: 'assistant',
-    text: 'Greetings. I am Nexus AI — your personal cognitive assistant. I am engineered with a voice-first neural interface, an offline text chat fallback, and a Hybrid Reasoning Engine allowing you to seamlessly toggle between instant Fast Cache responses and Deep Chain-of-Thought problem decomposition.',
-    timestamp: '14:02',
-    mode: 'offline-text',
-    computeTier: 'quick',
-    executionTier: 'local',
-    routeReason: 'Local On-Device Engine: Initialization',
-    thoughts: 'Loaded local vector cache: 142MB. Audio speech synthesis ready. Theme engine configured with 7 dynamic gradients.',
-    latencyMs: 12,
-    tokensUsed: 32,
-  },
-  {
-    id: 'm-2',
-    sender: 'user',
-    text: 'Break down step-by-step how the offline fallback mode ensures zero latency and air-gapped security.',
-    timestamp: '14:04',
-    mode: 'offline-text',
-  },
-  {
-    id: 'm-3',
-    sender: 'assistant',
-    text: 'When you toggle into Offline Text Fallback, Nexus runs directly against the browser sandbox and local indexed storage without transmitting payloads over the public network. This delivers sub-20ms inference and total data sovereignty.',
-    timestamp: '14:04',
-    mode: 'offline-text',
-    computeTier: 'deep',
-    executionTier: 'local',
-    routeReason: 'Local On-Device Mode: Security Architecture CoT',
-    autoTriggered: true,
-    thoughts: 'Queried offline security module. Verified zero outbound HTTP requests.',
-    reasoningSteps: [
-      {
-        step: 1,
-        title: 'Problem Scope: Air-Gapped Security',
-        details: 'Evaluated client requirement for local-first zero network persistence and sub-millisecond execution guarantees.',
-        status: 'completed',
-      },
-      {
-        step: 2,
-        title: 'Storage & Sandbox Partitioning',
-        details: 'Checked AES-GCM-256 in-memory key derivations and indexed table boundary quotas (512MB limit).',
-        status: 'completed',
-      },
-      {
-        step: 3,
-        title: 'Multi-Step Deductive Proof',
-        details: 'Confirmed zero socket egress; local state mutations execute synchronously without external dependencies.',
-        status: 'completed',
-      },
-      {
-        step: 4,
-        title: 'Verification & Policy Synthesis',
-        details: 'Synthesized strict local security policy contract and verified browser sandbox isolation.',
-        status: 'completed',
-      },
-    ],
-    latencyMs: 14,
-    tokensUsed: 680,
-    codeSnippet: {
-      language: 'typescript',
-      code: `// Nexus Local Offline Storage Engine
-export interface LocalSecurityPolicy {
-  airGapped: boolean;
-  maxLatencyMs: number;
-  encryption: 'AES-GCM-256';
-  storageQuotaMB: 512;
-}
-
-export const NEXUS_OFFLINE_CONFIG: LocalSecurityPolicy = {
-  airGapped: true,
-  maxLatencyMs: 18,
-  encryption: 'AES-GCM-256',
-  storageQuotaMB: 512,
-};`,
-    },
-  },
-];
+const EMPTY_SESSION: ChatSession = {
+  id: 'session-empty',
+  title: 'New chat',
+  category: 'today',
+  timestamp: 'Just now',
+  messageCount: 0,
+};
 
 export default function App() {
   // Theme state: defaults to Hyper Violet (first of 7 dynamic gradients)
@@ -153,13 +57,9 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
 
   // Chat sessions & active messages
-  const [sessions, setSessions] = useState<ChatSession[]>(() => loadNexusState('nexus_chat_sessions', INITIAL_SESSIONS));
-  const [activeSessionId, setActiveSessionId] = useState<string>('session-1');
-  const [sessionMessages, setSessionMessages] = useState<Record<string, ChatMessage[]>>(() => loadNexusState('nexus_chat_messages', {
-    'session-1': INITIAL_MESSAGES,
-    'session-2': [{ id: 's2-1', sender: 'assistant', text: 'Session loaded: Offline Cache & Privacy Architecture. Local encryption is active.', timestamp: '12:15', mode: 'offline-text', latencyMs: 11 }],
-    'session-3': [{ id: 's3-1', sender: 'assistant', text: 'Session loaded: Local Script Automation. 4 scripts ready in the offline vault.', timestamp: 'Yesterday', mode: 'offline-text', latencyMs: 9 }],
-  }));
+  const [sessions, setSessions] = useState<ChatSession[]>(() => loadNexusState('nexus_chat_sessions', [EMPTY_SESSION]));
+  const [activeSessionId, setActiveSessionId] = useState<string>('session-empty');
+  const [sessionMessages, setSessionMessages] = useState<Record<string, ChatMessage[]>>(() => loadNexusState('nexus_chat_messages', { 'session-empty': [] }));
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
@@ -220,7 +120,7 @@ export default function App() {
       title: `Nexus Session ${sessions.length + 1}`,
       category: 'today',
       timestamp: 'Just now',
-      messageCount: 1,
+      messageCount: 0,
     };
 
     const initialGreeting: ChatMessage = {
@@ -233,7 +133,7 @@ export default function App() {
     };
 
     setSessions([newSession, ...sessions]);
-    setSessionMessages((prev) => ({ ...prev, [newId]: [initialGreeting] }));
+    setSessionMessages((prev) => ({ ...prev, [newId]: [] }));
     setActiveSessionId(newId);
   };
 
@@ -331,8 +231,8 @@ export default function App() {
         mode,
         computeTier,
         executionTier: 'local',
-        routeReason: 'Local Engine (Emergency Fallback)',
-        thoughts: 'Evaluated intent against local cache dictionary. Zero external network sockets opened.',
+        routeReason: 'Service unavailable: local fallback',
+        
         latencyMs: 12,
       };
 
