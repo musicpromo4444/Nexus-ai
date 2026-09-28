@@ -9,8 +9,17 @@ import android.provider.Settings
 import android.content.Intent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 
 class MainActivity : Activity() {
+    private val commandReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            val command = intent?.getStringExtra("command") ?: return
+            getSharedPreferences("nexus_commands", MODE_PRIVATE).edit().putString("last_command", command).apply()
+        }
+    }
+
     private val requestCode = 4101
     private val permissions = arrayOf(
         Manifest.permission.RECORD_AUDIO,
@@ -22,6 +31,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        registerReceiver(commandReceiver, IntentFilter(VoiceAssistantService.ACTION_COMMAND), RECEIVER_NOT_EXPORTED)
         requestCorePermissions()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startVoiceService()
     }
@@ -33,6 +43,11 @@ class MainActivity : Activity() {
         if (missing.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, missing.toTypedArray(), requestCode)
         }
+    }
+
+    override fun onDestroy() {
+        unregisterReceiver(commandReceiver)
+        super.onDestroy()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
