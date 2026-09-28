@@ -241,16 +241,9 @@ Step 4: Verification & Synthesis: [Verify against constraints and test assumptio
         });
       }
     } catch {
-      // Graceful server-side fallback without dumping unhandled errors to stderr
-      const latencyMs = Date.now() - startTime;
-      return res.json({
-        text: `The query "${prompt}" was processed through server resilient dispatch. Real-time inference is synchronized.`,
-        effectiveTier: deepReasoning ? 'deep' : 'quick',
-        executionTier: 'local',
-        routeReason: 'Local Engine (Resilient Server Failover)',
-        autoTriggered: false,
-        latencyMs,
-        tokensUsed: 64,
+      return res.status(503).json({
+        error: 'AI inference is temporarily unavailable.',
+        fallbackToLocal: true,
       });
     }
   });
