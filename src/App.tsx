@@ -273,6 +273,63 @@ export default function App() {
     return await handleSendMessage(query);
   };
 
+  // Scheduled routine runner: daily routines execute while Nexus is open.
+  useEffect(() => {
+    const runDueRoutines = async () => {
+      const routines = loadNexusState<any[]>('nexus_custom_routines', []);
+      const now = new Date();
+      const todayKey = now.toISOString().slice(0, 10);
+      let changed = false;
+      const updated = [...routines];
+      for (let i = 0; i < updated.length; i++) {
+        const routine = updated[i];
+        if (!routine?.enabled || routine.triggerType !== 'schedule') continue;
+        const match = String(routine.trigger || '').match(/daily\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (!match) continue;
+        let hour = Number(match[1]);
+        const minute = Number(match[2]);
+        const ampm = match[3]?.toUpperCase();
+        if (ampm === 'PM' && hour < 12) hour += 12;
+        if (ampm === 'AM' && hour === 12) hour = 0;
+        if (hour !== now.getHours() || minute !== now.getMinutes()) continue;
+        if (String(routine.lastRunAt || '').startsWith(todayKey)) continue;
+        routine.lastRunAt = now.toISOString();
+        changed = true;
+        const result = await dispatchHybridReasoning({
+          prompt: String(routine.prompt || ''),
+          computeTier,
+          autoDetect: autoDetectReasoning,
+          mode: 'offline-text',
+          activeTheme,
+          soundEnabled,
+          onLocalAction: handleLocalAction,
+        });
+        const assistantMsg: ChatMessage = {
+          id: `routine-${Date.now()}-${i}`,
+          sender: 'assistant',
+          text: `**Routine: ${routine.title || 'Scheduled routine'}**\\n\\n${result.text}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          mode: 'offline-text',
+          computeTier: result.effectiveTier,
+          executionTier: result.executionTier,
+          routeReason: result.routeReason,
+          sources: result.sources,
+          thoughts: result.thoughts,
+          reasoningSteps: result.reasoningSteps,
+          autoTriggered: true,
+          latencyMs: result.latencyMs,
+          tokensUsed: result.tokensUsed,
+          codeSnippet: result.codeSnippet,
+        };
+        setSessionMessages((prev) => ({ ...prev, [activeSessionId]: [...(prev[activeSessionId] || []), assistantMsg] }));
+      }
+      if (changed) saveNexusState('nexus_custom_routines', updated);
+    };
+    void runDueRoutines();
+    const timer = window.setInterval(() => { void runDueRoutines(); }, 30000);
+    return () => window.clearInterval(timer);
+  }, [activeSessionId, computeTier, autoDetectReasoning, activeTheme, soundEnabled]);
+
   // Clear messages for active session
   const handleClearMessages = () => {
     setSessionMessages((prev) => ({
