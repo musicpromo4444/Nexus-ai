@@ -7,6 +7,10 @@ import android.net.Uri
 import android.provider.Settings
 
 class NexusDeviceActions(private val context: Context) {
+    data class ActionResult(val success: Boolean, val reason: String = "")
+    private val supportedActions = setOf("open_app", "make_call", "send_message", "control_media", "open_settings", "set_reminder", "run_routine")
+    fun supported(action: String): Boolean = action in supportedActions
+
     fun openApp(packageName: String): Boolean = try {
         context.startActivity(context.packageManager.getLaunchIntentForPackage(packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         true
