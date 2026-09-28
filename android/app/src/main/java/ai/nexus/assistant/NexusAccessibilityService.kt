@@ -16,7 +16,15 @@ class NexusAccessibilityService : AccessibilityService() {
         }
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val packageName = event.packageName?.toString().orEmpty()
+            if (packageName.isNotBlank()) {
+                getSharedPreferences("nexus_screen", MODE_PRIVATE).edit()
+                    .putString("active_package", packageName).apply()
+            }
+        }
+    }
     override fun onInterrupt() {}
 
     fun describeScreen(): List<ScreenElement> {
