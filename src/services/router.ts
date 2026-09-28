@@ -86,7 +86,17 @@ export function detectLocalUIAction(prompt: string): LocalAction | undefined {
     };
   }
 
-  // 4. Clear chat
+  // 4. Open Nexus pages
+  const pageMatch = p.match(/(?:open|go to|show)\s+(settings|profile|memory|memories|routines|recommendations|creation|subscription|device|assistant)/i);
+  if (pageMatch) {
+    const map: Record<string,string> = { settings:'settings', profile:'profile', memory:'memory-routines', memories:'memory-routines', routines:'memory-routines', recommendations:'recommendation', creation:'creation', subscription:'subscription', device:'device', assistant:'assistant' };
+    return { type: 'OPEN_PAGE', payload: { page: map[pageMatch[1].toLowerCase()] }, executed: false };
+  }
+
+  const urlMatch = prompt.match(/(?:open|visit|go to)\s+(https?:\/\/\S+)/i);
+  if (urlMatch) return { type: 'OPEN_URL', payload: { url: urlMatch[1] }, executed: false };
+
+  // 5. Clear chat
   if (
     p.includes('clear chat') ||
     p.includes('clear history') ||
@@ -101,7 +111,7 @@ export function detectLocalUIAction(prompt: string): LocalAction | undefined {
     };
   }
 
-  // 5. Add task
+  // 6. Add task
   const addTaskMatch = prompt.match(/(?:add task|new task|create task|todo:?)\s+(.+)/i);
   if (addTaskMatch && addTaskMatch[1]) {
     return {
