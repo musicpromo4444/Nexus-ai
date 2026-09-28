@@ -128,10 +128,10 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
   soundEnabled,
 }) => {
   // Memories state with localStorage persistence
-  const [memories, setMemories] = useState<MemoryItem[]>(() => loadNexusState('nexus_memories_vault', INITIAL_MEMORIES));
+  const [memories, setMemories] = useState<MemoryItem[]>(() => loadNexusState('nexus_memories_vault', []));
 
   // Routines state with localStorage persistence
-  const [routines, setRoutines] = useState<RoutineItem[]>(() => loadNexusState('nexus_custom_routines', INITIAL_ROUTINES));
+  const [routines, setRoutines] = useState<RoutineItem[]>(() => loadNexusState('nexus_custom_routines', []));
 
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [isAddingMemory, setIsAddingMemory] = useState(false);
