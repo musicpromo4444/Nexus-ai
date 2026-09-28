@@ -5,6 +5,8 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.GestureDescription
+import android.graphics.Path
 
 class NexusAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
@@ -53,6 +55,15 @@ class NexusAccessibilityService : AccessibilityService() {
             child.recycle()
         }
     }
+
+    fun tapCoordinate(x: Float, y: Float): Boolean {
+        val path = Path().apply { moveTo(x, y) }
+        val gesture = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, 80)).build()
+        return dispatchGesture(gesture, null, null)
+    }
+
+    fun scrollForward(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD) == true
+    fun scrollBackward(): Boolean = rootInActiveWindow?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) == true
 
     fun tapText(target: String): Boolean {
         val root = rootInActiveWindow ?: return false
