@@ -5,6 +5,31 @@ import { loadNexusState, saveNexusState } from '../utils/persistence';
 // Persistent local task storage in memory & localStorage
 const LOCAL_STORAGE_TASKS_KEY = 'nexus_local_tasks_v1';
 
+const NATIVE_ACTIONS = new Set(['open_app','make_call','send_message','set_alarm','control_media','read_screen','tap_screen']);
+
+export function getDeviceBridgeStatus() {
+  const androidBridge = typeof window !== 'undefined' && (window as any).NexusAndroid;
+  return {
+    connected: !!androidBridge,
+    platform: androidBridge ? 'android' : 'browser',
+    permissions: Array.isArray(androidBridge?.permissions) ? androidBridge.permissions : [],
+  } as const;
+}
+
+export async function requestNativeDeviceAction(action: string, payload?: unknown) {
+  if (!NATIVE_ACTIONS.has(action)) return { success: false, reason: 'Unsupported device action.' };
+  const bridge = typeof window !== 'undefined' ? (window as any).NexusAndroid : undefined;
+  if (!bridge || typeof bridge.execute !== 'function') {
+    return { success: false, reason: 'Android device bridge is not connected.' };
+  }
+  try {
+    const result = await bridge.execute(action, payload ?? {});
+    return { success: true, result };
+  } catch {
+    return { success: false, reason: 'The device denied or could not complete that action.' };
+  }
+}
+
 export function getLocalTasks(): LocalTask[] {
   const saved = loadNexusState<LocalTask[] | null>(LOCAL_STORAGE_TASKS_KEY, null);
   if (saved) return saved;
@@ -202,7 +227,7 @@ export async function executeLocalEngine(params: {
 
     if (action.type === 'OPEN_PAGE') {
       const page = String(action.payload?.page || 'assistant');
-      const allowed = ['assistant','subscription','recommendation','creation','profile','memory-routines','neural-modules','settings','device'];
+      const allowed = ['assistant','subscription','recommendation','creation','profile','memory-routines','neural-modules','settings','device','voice-environment'];
       if (allowed.includes(page) && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('nexus:navigate', { detail: { page } }));
       return { text: allowed.includes(page) ? `Opening **${page.replace(/-/g, ' ')}**.` : 'That Nexus page is not available.', effectiveTier:'quick', executionTier:'local', routeReason:'Local UI Action: Page Navigation', autoTriggered:false, latencyMs:Math.max(5,Math.round(performance.now()-startTime)), tokensUsed:0, localAction:{...action,executed:allowed.includes(page)} };
     }
