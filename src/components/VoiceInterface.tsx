@@ -213,7 +213,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
         }, 4000);
       }
     } catch {
-      const fallbackText = 'All neural caches are synchronized. System operating in zero-latency mode.';
+      const fallbackText = 'I could not complete that voice request. Please try again or switch to Offline Text.';
       setAssistantSpokenText(fallbackText);
       setVoiceState('speaking');
       if (soundEnabled && !isMuted) {
