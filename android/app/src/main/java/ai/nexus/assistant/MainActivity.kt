@@ -36,12 +36,21 @@ class MainActivity : Activity() {
         Manifest.permission.SEND_SMS
     )
 
+    private val aiReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            val response = intent?.getStringExtra("response")
+            val error = intent?.getStringExtra("error")
+            getSharedPreferences("nexus_ai", MODE_PRIVATE).edit().putString("last_response", response ?: error).apply()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         scheduler = NexusScheduler(this)
         deviceActions = NexusDeviceActions(this)
         accountBridge = NexusAccountBridge(this)
         registerReceiver(commandReceiver, IntentFilter(VoiceAssistantService.ACTION_COMMAND), RECEIVER_NOT_EXPORTED)
+        registerReceiver(aiReceiver, IntentFilter(VoiceAssistantService.ACTION_AI_RESPONSE), RECEIVER_NOT_EXPORTED)
         requestCorePermissions()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startVoiceService()
     }
@@ -57,6 +66,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         unregisterReceiver(commandReceiver)
+        unregisterReceiver(aiReceiver)
         super.onDestroy()
     }
 
