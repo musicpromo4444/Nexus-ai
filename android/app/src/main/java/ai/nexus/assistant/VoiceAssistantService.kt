@@ -1,0 +1,82 @@
+package ai.nexus.assistant
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Intent
+import android.os.IBinder
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.core.app.NotificationCompat
+
+class VoiceAssistantService : Service() {
+    private var recognizer: SpeechRecognizer? = null
+    private var listening = false
+    private val channelId = "nexus_voice"
+
+    override fun onCreate() {
+        super.onCreate()
+        createChannel()
+        startForeground(4102, notification())
+        startListening()
+    }
+
+    private fun startListening() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) return
+        recognizer?.destroy()
+        recognizer = SpeechRecognizer.createSpeechRecognizer(this).also { sr ->
+            sr.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: android.os.Bundle?) { listening = true }
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() { listening = false; restart() }
+                override fun onError(error: Int) { listening = false; restart() }
+                override fun onResults(results: android.os.Bundle?) {
+                    val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                    if (text.isNotBlank()) {
+                        sendBroadcast(Intent(ACTION_TRANSCRIPT).setPackage(packageName).putExtra("text", text))
+                    }
+                    listening = false
+                    restart()
+                }
+                override fun onPartialResults(partialResults: android.os.Bundle?) {}
+                override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
+            })
+        }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        }
+        recognizer?.startListening(intent)
+    }
+
+    private fun restart() {
+        if (!listening) android.os.Handler(mainLooper).postDelayed({ startListening() }, 400)
+    }
+
+    private fun createChannel() {
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(NotificationChannel(channelId, "Nexus voice assistant", NotificationManager.IMPORTANCE_LOW))
+    }
+
+    private fun notification(): Notification =
+        NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setContentTitle("Nexus is listening")
+            .setContentText("Voice assistant is active")
+            .setOngoing(true)
+            .build()
+
+    override fun onDestroy() {
+        recognizer?.destroy()
+        recognizer = null
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    companion object { const val ACTION_TRANSCRIPT = "ai.nexus.assistant.VOICE_TRANSCRIPT" }
+}
