@@ -255,6 +255,21 @@ export async function executeLocalEngine(params: {
       };
     }
 
+    if (action.type === 'SAVE_MEMORY' || action.type === 'DELETE_MEMORY') {
+      const memories = loadNexusState<any[]>('nexus_memories_vault', []);
+      if (action.type === 'SAVE_MEMORY') {
+        const content = String(action.payload?.content || '').trim();
+        if (!content) return { text:'I need something to remember.', effectiveTier:'quick', executionTier:'local', routeReason:'Local Memory Vault', autoTriggered:false, latencyMs:5, tokensUsed:0, localAction:{...action,executed:false} };
+        const item = { id:`mem-${Date.now()}`, title:String(action.payload?.title || 'Remembered preference'), content, category:'Preferences', isLocked:false, createdAt:new Date().toISOString() };
+        saveNexusState('nexus_memories_vault', [item, ...memories]);
+        return { text:`Saved to memory: **"${content}"**.`, effectiveTier:'quick', executionTier:'local', routeReason:'Local Memory Vault', autoTriggered:false, latencyMs:6, tokensUsed:0, localAction:{...action,executed:true} };
+      }
+      const target = String(action.payload?.content || '').trim().toLowerCase();
+      const filtered = memories.filter((m) => !String(m.content || '').toLowerCase().includes(target));
+      saveNexusState('nexus_memories_vault', filtered);
+      return { text: filtered.length < memories.length ? 'That memory was removed.' : 'I could not find a matching memory.', effectiveTier:'quick', executionTier:'local', routeReason:'Local Memory Vault', autoTriggered:false, latencyMs:6, tokensUsed:0, localAction:{...action,executed:filtered.length < memories.length} };
+    }
+
     if (action.type === 'COMPLETE_TASK' || action.type === 'DELETE_TASK') {
       const tasks = getLocalTasks();
       const index = Number(action.payload?.index);
