@@ -127,6 +127,11 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
     setIsAddingMemory(false);
   };
 
+  const handleDeleteRoutine = (id: string) => {
+    if (soundEnabled) playUiSound('click');
+    setRoutines((prev) => prev.filter((r) => r.id !== id));
+  };
+
   const handleToggleRoutine = (id: string) => {
     if (soundEnabled) playUiSound('toggle');
     setRoutines((prev) =>
@@ -417,7 +422,7 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
               className="text-xs text-cyan-400 hover:underline inline-flex items-center gap-1"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Restore default memory templates
+              Clear memory vault
             </button>
           </div>
         )}
@@ -540,6 +545,12 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
 
         {/* Routines List */}
         <div className="space-y-3">
+          {routines.length === 0 && (
+            <div className="p-8 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 text-center">
+              <p className="text-sm text-slate-400">No routines created yet.</p>
+              <p className="text-xs text-slate-500 mt-1">Create one to make Nexus perform a repeatable workflow.</p>
+            </div>
+          )}
           {routines.map((routine) => {
             const isRunning = activeRunId === routine.id;
             return (
@@ -579,6 +590,14 @@ export const MemoryRoutinesPage: React.FC<MemoryRoutinesPageProps> = ({
                   >
                     <Play className={`w-3.5 h-3.5 text-cyan-400 ${isRunning ? 'animate-spin' : ''}`} />
                     <span>{isRunning ? 'Running...' : 'Run Now'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteRoutine(routine.id)}
+                    className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 text-slate-400 hover:text-rose-400"
+                    title="Delete routine"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
 
                   {/* One-Tap Status Toggle Switch */}
