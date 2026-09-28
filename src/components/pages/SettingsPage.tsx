@@ -51,13 +51,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 }) => {
   const [offlineGracePeriod, setOfflineGracePeriod] = useState<number>(() => loadNexusState('nexus_offline_grace_period', 1200));
   const [telemetryOptIn, setTelemetryOptIn] = useState<boolean>(() => loadNexusState('nexus_telemetry_opt_in', false));
-  const [backgroundListening, setBackgroundListening] = useState<boolean>(() => loadNexusState('nexus_background_listening', false));
-
-  const updateBackgroundListening = (enabled: boolean) => {
-    setBackgroundListening(enabled);
-    onToggleBackgroundListening();
-  };
-
   useEffect(() => { saveNexusState('nexus_offline_grace_period', offlineGracePeriod); }, [offlineGracePeriod]);
   useEffect(() => { saveNexusState('nexus_telemetry_opt_in', telemetryOptIn); }, [telemetryOptIn]);
 
