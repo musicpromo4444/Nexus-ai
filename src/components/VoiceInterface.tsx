@@ -174,28 +174,8 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
   };
 
   const fallbackSimulatedVoice = () => {
-    // Simulated natural spoken transcription
-    const simulatedQueries = [
-      'What are my priority tasks for today?',
-      'Give me an offline status brief',
-      'Optimize our personal schedule for high focus',
-    ];
-    const picked = simulatedQueries[Math.floor(Math.random() * simulatedQueries.length)];
-
-    let charIndex = 0;
-    const interval = setInterval(() => {
-      charIndex += 3;
-      setTranscript(picked.slice(0, charIndex));
-      if (charIndex >= picked.length) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setVoiceState('processing');
-          setTimeout(() => {
-            processQuery(picked);
-          }, 800);
-        }, 600);
-      }
-    }, 45);
+    setVoiceState('idle');
+    setAssistantSpokenText('Voice recognition is not available in this browser. Switch to Offline Text to continue.');
   };
 
   const processQuery = async (query: string) => {
@@ -285,7 +265,7 @@ export const VoiceInterface: React.FC<VoiceInterfaceProps> = ({
           <span className={activeTheme.textGradientClass}>Nexus Assistant</span>
         </h1>
         <p className="text-xs sm:text-sm text-slate-400 max-w-md">
-          Natural voice interaction with instant spoken responses and seamless offline text fallback.
+          Natural voice interaction with browser-supported speech recognition and spoken responses.
         </p>
       </div>
 
