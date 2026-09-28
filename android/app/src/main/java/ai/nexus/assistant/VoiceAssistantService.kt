@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import android.os.PowerManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -14,12 +15,14 @@ import androidx.core.app.NotificationCompat
 class VoiceAssistantService : Service() {
     private var recognizer: SpeechRecognizer? = null
     private var listening = false
+    private var wakeLock: PowerManager.WakeLock? = null
     private val channelId = "nexus_voice"
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
         startForeground(4102, notification())
+        wakeLock = (getSystemService(POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Nexus::Voice").apply { acquire(10 * 60 * 1000L) }
         startListening()
     }
 
@@ -73,6 +76,8 @@ class VoiceAssistantService : Service() {
     override fun onDestroy() {
         recognizer?.destroy()
         recognizer = null
+        wakeLock?.let { if (it.isHeld) it.release() }
+        wakeLock = null
         super.onDestroy()
     }
 
