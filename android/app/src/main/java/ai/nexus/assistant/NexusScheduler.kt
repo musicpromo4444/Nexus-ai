@@ -13,7 +13,8 @@ class NexusScheduler(private val context: Context) {
         val intent = Intent(context, NexusAlarmReceiver::class.java).putExtra("title", title)
         val pending = PendingIntent.getBroadcast(context, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         return try {
-            alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pending)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && !alarm.canScheduleExactAlarms()) return false
+            alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pending)
             true
         } catch (_: SecurityException) { false }
     }
