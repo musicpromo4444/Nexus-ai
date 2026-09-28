@@ -230,6 +230,16 @@ export async function executeLocalEngine(params: {
       };
     }
 
+    if (action.type === 'COMPLETE_TASK' || action.type === 'DELETE_TASK') {
+      const tasks = getLocalTasks();
+      const index = Number(action.payload?.index);
+      if (!Number.isInteger(index) || index < 0 || index >= tasks.length) return { text: 'I could not find that task.', effectiveTier:'quick', executionTier:'local', routeReason:'Local Task Storage', autoTriggered:false, latencyMs:Math.max(5, Math.round(performance.now()-startTime)), tokensUsed:0, localAction:{...action,executed:false} };
+      const target = tasks[index];
+      const updated = action.type === 'COMPLETE_TASK' ? tasks.map((task,i) => i === index ? {...task, completed:true} : task) : tasks.filter((_,i) => i !== index);
+      saveLocalTasks(updated);
+      return { text: action.type === 'COMPLETE_TASK' ? `Completed task **${target.title}**.` : `Deleted task **${target.title}**.`, effectiveTier:'quick', executionTier:'local', routeReason:'Local Task Storage', autoTriggered:false, latencyMs:Math.max(5, Math.round(performance.now()-startTime)), tokensUsed:0, localAction:{...action,executed:true} };
+    }
+
     if (action.type === 'ADD_TASK') {
       const title = action.payload?.title || 'New offline task';
       const updated = addLocalTask(title);
@@ -304,10 +314,10 @@ export async function executeLocalEngine(params: {
 
 • **Sandbox Mode:** ${telemetry.online ? 'Online (Air-Gapped Fallback Ready)' : 'Air-Gapped (Strict Isolation)'}
 • **CPU Cores:** ${telemetry.cpuCores} concurrent hardware threads detected
-• **Memory Heap:** ~${telemetry.memoryMb} MB actively allocated in browser heap
-• **Storage Quota:** ~${telemetry.storageEstimateMb?.used} MB indexed / ${telemetry.storageEstimateMb?.total} MB local quota
-• **Power State:** ${telemetry.batteryLevel}% ${telemetry.isCharging ? '(Charging)' : '(On Battery)'}
-• **Inference Latency:** Sub-15ms local bus execution
+• **Memory Heap:** ${telemetry.memoryMb !== undefined ? `~${telemetry.memoryMb} MB actively allocated` : 'Unavailable in this browser'}
+• **Storage Quota:** ${telemetry.storageEstimateMb ? `~${telemetry.storageEstimateMb.used} MB used / ${telemetry.storageEstimateMb.total} MB available` : 'Unavailable in this browser'}
+• **Power State:** ${telemetry.batteryLevel !== undefined ? `${telemetry.batteryLevel}% ${telemetry.isCharging ? '(Charging)' : '(On Battery)'}` : 'Unavailable in this browser'}
+
 • **Active Theme:** ${activeTheme?.name || 'Default'} (\`${activeTheme?.primaryHex || '#00ffc4'}\`)
 
 Only capabilities exposed by this browser are reported; unavailable values are not fabricated.`;
