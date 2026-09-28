@@ -9,7 +9,8 @@ export type AppPage =
   | 'memory-routines'
   | 'neural-modules'
   | 'settings'
-  | 'device';
+  | 'device'
+  | 'voice-environment';
 
 export type ComputeTier = 'quick' | 'deep';
 
