@@ -71,7 +71,7 @@ async function startServer() {
     // with silent graceful failover across models to prevent 429/503 interruptions.
     async function generateWithFallback(config: Record<string, any>) {
       // Prioritize fast, high-availability models with active quota
-      const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest'];
 
       for (const model of modelsToTry) {
         try {
@@ -111,6 +111,7 @@ Step 4: Verification & Synthesis: [Verify against constraints and test assumptio
           systemInstruction,
           temperature: 0.2,
           maxOutputTokens: 2500,
+          ...(needsSearch ? { tools: [{ googleSearch: {} }] } : {}),
         };
 
         const { response } = await generateWithFallback(config);
@@ -191,6 +192,7 @@ Step 4: Verification & Synthesis: [Verify against constraints and test assumptio
             'You are Nexus AI running with Cloud Dynamic Inference. Provide an accurate, direct, helpful, and concise response. Never use generic canned placeholders.',
           temperature: 0.3,
           maxOutputTokens: 1200,
+          ...(needsSearch ? { tools: [{ googleSearch: {} }] } : {}),
         };
 
         const { response } = await generateWithFallback(config);
