@@ -68,6 +68,21 @@ export default function App() {
 
   // Local reminder watcher: fires due reminders while Nexus is open.
   useEffect(() => {
+    const sw = navigator.serviceWorker;
+    if (!sw) return;
+    const registerPeriodic = async () => {
+      try {
+        const reg = await sw.ready;
+        if ('periodicSync' in reg) {
+          const status = await (reg as any).periodicSync.getTags();
+          if (!status.includes('nexus-reminders')) await (reg as any).periodicSync.register('nexus-reminders', { minInterval: 60 * 1000 });
+        }
+      } catch {}
+    };
+    void registerPeriodic();
+  }, []);
+
+  useEffect(() => {
     const handler = (event: Event) => {
       const page = (event as CustomEvent<{ page?: string }>).detail?.page;
       if (page) setActivePage(page as any);
