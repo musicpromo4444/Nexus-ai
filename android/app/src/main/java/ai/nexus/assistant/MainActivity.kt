@@ -27,6 +27,7 @@ class MainActivity : Activity() {
     private val requestCode = 4101
     private lateinit var scheduler: NexusScheduler
     private lateinit var deviceActions: NexusDeviceActions
+    private lateinit var accountBridge: NexusAccountBridge
     private val permissions = arrayOf(
         Manifest.permission.RECORD_AUDIO,
         Manifest.permission.POST_NOTIFICATIONS,
@@ -39,6 +40,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         scheduler = NexusScheduler(this)
         deviceActions = NexusDeviceActions(this)
+        accountBridge = NexusAccountBridge(this)
         registerReceiver(commandReceiver, IntentFilter(VoiceAssistantService.ACTION_COMMAND), RECEIVER_NOT_EXPORTED)
         requestCorePermissions()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startVoiceService()
