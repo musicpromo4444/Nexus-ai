@@ -42,6 +42,20 @@ class MainActivity : Activity() {
         }
     }
 
+    fun requestPermissionFor(permission: String) {
+        val value = when (permission) {
+            "microphone" -> Manifest.permission.RECORD_AUDIO
+            "notifications" -> Manifest.permission.POST_NOTIFICATIONS
+            "contacts" -> Manifest.permission.READ_CONTACTS
+            "phone" -> Manifest.permission.CALL_PHONE
+            "messages" -> Manifest.permission.SEND_SMS
+            else -> return
+        }
+        if (ContextCompat.checkSelfPermission(this, value) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(value), requestCode)
+        }
+    }
+
     private fun startVoiceService() {
         val intent = Intent(this, VoiceAssistantService::class.java)
         androidx.core.content.ContextCompat.startForegroundService(this, intent)
