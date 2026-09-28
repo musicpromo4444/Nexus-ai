@@ -98,7 +98,7 @@ class VoiceAssistantService : Service() {
     }
 
     private fun dispatchCommand(text: String) {
-        val command = JSONObject().put("type", "voice_transcript").put("text", text).toString()
+        val command = JSONObject().put("type", "voice_transcript").put("text", text).put("source", "android_voice").toString()
         sendBroadcast(Intent(ACTION_COMMAND).setPackage(packageName).putExtra("command", command))
         Thread { requestAi(text) }.start()
     }
