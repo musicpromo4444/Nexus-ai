@@ -60,6 +60,32 @@ export const CreationPage: React.FC<CreationPageProps> = ({
   const [appAnswers, setAppAnswers] = useState({ type: '', platforms: '', features: '', design: '' });
   const [appQuote, setAppQuote] = useState<number | null>(null);
 
+  // Private pricing rule. Admin can later move these values to the Admin/Supabase settings.
+  // Customers only see the final price, never the internal cost or markup percentage.
+  const APP_MINIMUM_PRICE = 150;
+  const APP_MARKUP_PERCENT = 80;
+
+  const calculateInternalAppCost = (answers: typeof appAnswers): number => {
+    let cost = 100;
+    if (answers.type === 'Mobile + web app') cost += 100;
+    if (answers.type === 'AI app') cost += 150;
+    if (answers.type === 'Marketplace') cost += 200;
+    if (answers.platforms === 'Android + iPhone') cost += 100;
+    if (answers.platforms === 'Web + mobile') cost += 100;
+    if (answers.features === 'Business') cost += 75;
+    if (answers.features === 'Advanced') cost += 150;
+    if (answers.features === 'AI-powered') cost += 200;
+    if (answers.features === 'Marketplace / payments') cost += 250;
+    if (answers.design === 'Premium') cost += 75;
+    if (answers.design === 'Custom brand design') cost += 125;
+    return cost;
+  };
+
+  const calculateCustomerAppPrice = (answers: typeof appAnswers): number => {
+    const internalCost = calculateInternalAppCost(answers);
+    return Math.max(APP_MINIMUM_PRICE, Math.ceil((internalCost * (1 + APP_MARKUP_PERCENT / 100)) / 10) * 10);
+  };
+
   const appQuestions = [
     { key: 'type', title: 'What do you want to build?', options: ['Mobile app', 'Web app', 'Mobile + web app', 'AI app', 'Marketplace'] },
     { key: 'platforms', title: 'Where should it work?', options: ['Android', 'iPhone', 'Android + iPhone', 'Web + mobile'] },
@@ -69,13 +95,12 @@ export const CreationPage: React.FC<CreationPageProps> = ({
 
   const chooseAppAnswer = (value: string) => {
     const key = appQuestions[appStep].key;
-    setAppAnswers((current) => ({ ...current, [key]: value }));
-    if (appStep < appQuestions.length - 1) setAppStep((step) => step + 1);
-    else {
-      const complexity = value.includes('Custom') ? 100 : value.includes('Premium') ? 50 : 0;
-      const featureValue = appAnswers.features.includes('Marketplace') || appAnswers.features.includes('AI') ? 150 : appAnswers.features.includes('Advanced') ? 100 : 0;
-      const platformValue = appAnswers.platforms.includes('+') ? 100 : 0;
-      setAppQuote(150 + complexity + featureValue + platformValue);
+    const nextAnswers = { ...appAnswers, [key]: value };
+    setAppAnswers(nextAnswers);
+    if (appStep < appQuestions.length - 1) {
+      setAppStep((step) => step + 1);
+    } else {
+      setAppQuote(calculateCustomerAppPrice(nextAnswers));
     }
   };
 
@@ -159,7 +184,7 @@ export const CreationPage: React.FC<CreationPageProps> = ({
             </> : <>
               <div className="flex items-center gap-3 mb-5"><CheckCircle2 className="w-7 h-7 text-emerald-400" /><div><p className="text-[10px] uppercase tracking-widest text-emerald-400">Plan complete</p><h2 className="text-xl font-bold text-white">Your starting build price</h2></div></div>
               <div className="text-4xl font-black text-white mb-2">$ {appQuote.toLocaleString()}</div>
-              <p className="text-sm text-slate-400">Starting at $150. The exact price is calculated from the requirements you gave Nexus.</p>
+              <p className="text-sm text-slate-400">Based on the requirements you provided, your app will cost approximately <span className="text-white font-semibold">$ {appQuote.toLocaleString()}</span> to build. Your consultation is free.</p>
               <div className="mt-5 p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-slate-300 space-y-2">{Object.entries(appAnswers).map(([key, value]) => <div key={key} className="flex justify-between gap-3"><span className="capitalize text-slate-500">{key}</span><span>{value}</span></div>)}</div>
               <button onClick={() => setShowAppBuilder(false)} className="w-full mt-5 py-3 rounded-xl text-sm font-bold text-white" style={{ background: activeTheme.gradient }}>Continue with this app plan</button>
             </>}
