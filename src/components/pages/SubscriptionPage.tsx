@@ -29,7 +29,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [credits] = useState<number | null>(null);
   const [isAddingCredits] = useState<boolean>(false);
-  const [autoRefill, setAutoRefill] = useState<boolean>(false);
+  const [autoRefill] = useState<boolean>(false);
   const maxCredits = 25000;
 
   const handleAddCredits = () => {
