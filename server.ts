@@ -131,6 +131,8 @@ Step 4: Verification & Synthesis: [Verify against constraints and test assumptio
         const { response } = await generateWithFallback(config);
 
         const rawText = response.text || '';
+        const offerReadout = rawText.includes('[NEXUS_OFFER_READOUT]');
+        const cleanedResponseText = rawText.replace(/\\s*\\[NEXUS_OFFER_READOUT\\]\\s*/g, '').trim();
         const thoughtMatch = rawText.match(/<thought>([\s\S]*?)<\/thought>/i);
         let thoughts = '';
         let cleanedText = rawText;
@@ -203,7 +205,7 @@ Step 4: Verification & Synthesis: [Verify against constraints and test assumptio
         // Fast Tier / High-Efficiency dynamic response
         const config: Record<string, any> = {
           systemInstruction:
-            'You are Nexus AI running with Cloud Dynamic Inference. Provide an accurate, direct, helpful, and concise response. Never use generic canned placeholders.',
+            'You are Nexus AI running with Cloud Dynamic Inference. Provide an accurate, direct, helpful, and concise response. Never use generic canned placeholders. When the user asks for current/latest/live information or asks Nexus to search the internet, use search grounding. If the request is naturally useful while the user may be away from the screen, append the exact marker [NEXUS_OFFER_READOUT] to the response so the Android assistant can proactively ask whether the user wants the result read aloud. Do not add the marker for ordinary chat.',
           temperature: 0.3,
           maxOutputTokens: 1200,
           ...(needsSearch ? { tools: [{ googleSearch: {} }] } : {}),
@@ -241,7 +243,8 @@ Step 4: Verification & Synthesis: [Verify against constraints and test assumptio
         }
 
         return res.json({
-          text: rawText,
+          text: cleanedResponseText || rawText,
+          offerReadout,
           effectiveTier: 'quick',
           executionTier: 'cloud',
           routeReason: needsSearch
