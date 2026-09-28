@@ -293,6 +293,23 @@ export function routeQuery(params: {
     };
   }
 
+  // 5. Local reminder commands
+  const reminder = prompt.match(/(?:remind me|set a reminder)\s+(?:in\s+)?(\\d+)\\s*(minute|minutes|min|hour|hours|hr|hrs)\\s*(?:to|that)\\s+(.+)/i);
+  if (reminder) {
+    const amount = Number(reminder[1]);
+    const unit = reminder[2].toLowerCase();
+    const title = reminder[3].trim();
+    const minutes = unit.startsWith('hour') || unit.startsWith('hr') ? amount * 60 : amount;
+    return {
+      targetTier: 'local',
+      routeReason: 'Local On-Device Mode: Reminder Scheduler',
+      isLiveData: false,
+      isDeepReasoning: false,
+      autoTriggered: false,
+      localAction: { type: 'SET_REMINDER', payload: { title, minutes }, executed: false },
+    };
+  }
+
   // 5. Default to Cloud API for dynamic questions (knowledge, coding, conversation)
   // This ensures questions actually get answered dynamically instead of returning static canned text!
   return {
