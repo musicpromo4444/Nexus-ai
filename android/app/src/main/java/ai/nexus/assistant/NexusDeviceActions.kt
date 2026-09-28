@@ -11,6 +11,13 @@ class NexusDeviceActions(private val context: Context) {
     private val supportedActions = setOf("open_app", "make_call", "send_message", "control_media", "open_settings", "set_reminder", "run_routine")
     fun supported(action: String): Boolean = action in supportedActions
 
+    fun executeLocal(action: String, payload: Map<String, String>): ActionResult = when (action) {
+        "open_app" -> ActionResult(supported(action), if (supported(action)) "Ready" else "Unsupported")
+        "control_media" -> ActionResult(supported(action), "Media control available through Android")
+        "set_reminder", "run_routine" -> ActionResult(true, "Ready for Android scheduler")
+        else -> ActionResult(false, "Sensitive action requires the approved Nexus permission flow")
+    }
+
     fun openApp(packageName: String): Boolean = try {
         context.startActivity(context.packageManager.getLaunchIntentForPackage(packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         true
