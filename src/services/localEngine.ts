@@ -8,11 +8,7 @@ const LOCAL_STORAGE_TASKS_KEY = 'nexus_local_tasks_v1';
 export function getLocalTasks(): LocalTask[] {
   const saved = loadNexusState<LocalTask[] | null>(LOCAL_STORAGE_TASKS_KEY, null);
   if (saved) return saved;
-  return [
-    { id: 't-1', title: 'Audit local indexed storage boundary', completed: true, createdAt: '10:00' },
-    { id: 't-2', title: 'Optimize on-device vector cache indices', completed: false, createdAt: '11:30' },
-    { id: 't-3', title: 'Validate zero-latency air-gapped fallback', completed: false, createdAt: '13:15' },
-  ];
+  return [];
 }
 
 export function saveLocalTasks(tasks: LocalTask[]): void {
@@ -116,10 +112,10 @@ export async function getDeviceTelemetry(): Promise<{
   return {
     online,
     cpuCores,
-    memoryMb: memoryMb || 142,
-    storageEstimateMb: storageEstimateMb || { used: 34, total: 512 },
-    batteryLevel: batteryLevel ?? 96,
-    isCharging: isCharging ?? true,
+    memoryMb,
+    storageEstimateMb,
+    batteryLevel,
+    isCharging,
   };
 }
 
