@@ -10,6 +10,8 @@ import android.os.PowerManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -20,6 +22,7 @@ class VoiceAssistantService : Service() {
     private var listening = false
     private var awaitingCommand = false
     private var commandTimeout: Runnable? = null
+    private var tts: TextToSpeech? = null
     private val wakePhrases = listOf("hey nexus", "okay nexus", "ok nexus", "hey next us")
     private var wakeLock: PowerManager.WakeLock? = null
     private val endpoint = "https://nexus-ai-three-neon.vercel.app/api/chat"
@@ -28,6 +31,7 @@ class VoiceAssistantService : Service() {
     override fun onCreate() {
         super.onCreate()
         createChannel()
+        tts = TextToSpeech(this) { status -> if (status == TextToSpeech.SUCCESS) tts?.language = Locale.getDefault() }
         startForeground(4102, notification())
         wakeLock = (getSystemService(POWER_SERVICE) as PowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Nexus::Voice").apply { acquire(10 * 60 * 1000L) }
         startListening()
@@ -35,6 +39,9 @@ class VoiceAssistantService : Service() {
 
     private fun startListening() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) return
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
         recognizer?.destroy()
         recognizer = SpeechRecognizer.createSpeechRecognizer(this).also { sr ->
             sr.setRecognitionListener(object : RecognitionListener {
@@ -67,6 +74,7 @@ class VoiceAssistantService : Service() {
         val wake = wakePhrases.firstOrNull { normalized == it || normalized.startsWith("$it ") }
         if (wake != null) {
             val commandText = normalized.removePrefix(wake).trim()
+            speakListening()
             if (commandText.isNotBlank()) {
                 dispatchCommand(commandText)
             } else {
@@ -82,6 +90,11 @@ class VoiceAssistantService : Service() {
             commandTimeout?.let { android.os.Handler(mainLooper).removeCallbacks(it) }
             dispatchCommand(text)
         }
+    }
+
+    private fun speakListening() {
+        tts?.speak("I’m listening.", TextToSpeech.QUEUE_FLUSH, null, "nexus_listening")
+        sendBroadcast(Intent(ACTION_LISTENING).setPackage(packageName))
     }
 
     private fun dispatchCommand(text: String) {
@@ -137,5 +150,6 @@ class VoiceAssistantService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     companion object { const val ACTION_COMMAND = "ai.nexus.assistant.NEXUS_COMMAND"
-        const val ACTION_AI_RESPONSE = "ai.nexus.assistant.NEXUS_AI_RESPONSE" }
+        const val ACTION_AI_RESPONSE = "ai.nexus.assistant.NEXUS_AI_RESPONSE"
+        const val ACTION_LISTENING = "ai.nexus.assistant.NEXUS_LISTENING" }
 }
