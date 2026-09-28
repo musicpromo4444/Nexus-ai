@@ -70,26 +70,40 @@ async function startServer() {
     // Resilient generation helper: prioritizes high-availability gemini-3.1-flash-lite,
     // with silent graceful failover across models to prevent 429/503 interruptions.
     async function generateWithFallback(config: Record<string, any>) {
-      // Prioritize fast, high-availability models with active quota
       const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest'];
+      let lastError: unknown = null;
 
       for (const model of modelsToTry) {
         try {
-          const res = await ai!.models.generateContent({
-            model,
-            contents: prompt,
-            config,
-          });
-          if (res && res.text) {
-            return { response: res, usedSearch: false };
-          }
-        } catch {
-          // Quietly advance to next model candidate without noisy stderr logs
-          continue;
+          const response = await Promise.race([
+            ai!.models.generateContent({ model, contents: prompt, config }),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Model request timed out')), 20000)),
+          ]);
+
+          if (response && response.text) return { response, usedSearch: Boolean(config.tools) };
+        } catch (error) {
+          lastError = error;
         }
       }
 
-      throw new Error('All model candidates temporarily unavailable');
+      // Search grounding can fail independently of the model. Retry once without it.
+      if (config.tools) {
+        const fallbackConfig = { ...config };
+        delete fallbackConfig.tools;
+        for (const model of modelsToTry) {
+          try {
+            const response = await Promise.race([
+              ai!.models.generateContent({ model, contents: prompt, config: fallbackConfig }),
+              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Model request timed out')), 20000)),
+            ]);
+            if (response && response.text) return { response, usedSearch: false };
+          } catch (error) {
+            lastError = error;
+          }
+        }
+      }
+
+      throw lastError instanceof Error ? lastError : new Error('All model candidates temporarily unavailable');
     }
 
     try {
