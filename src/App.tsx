@@ -42,6 +42,7 @@ export default function App() {
   const [glowIntensity, setGlowIntensity] = useState<'subtle' | 'vibrant' | 'radiant'>(() => loadNexusState('nexus_glow_intensity', 'vibrant'));
   const [ambientAuraEnabled, setAmbientAuraEnabled] = useState<boolean>(() => loadNexusState('nexus_ambient_aura', true));
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => loadNexusState('nexus_sound_enabled', true));
+  const [backgroundListening, setBackgroundListening] = useState<boolean>(() => loadNexusState('nexus_background_listening', false));
   const [isThemeCustomizerOpen, setIsThemeCustomizerOpen] = useState<boolean>(false);
   const [isPagesDrawerOpen, setIsPagesDrawerOpen] = useState<boolean>(false);
   const [activePage, setActivePage] = useState<AppPage>('assistant');
@@ -101,6 +102,7 @@ export default function App() {
   useEffect(() => { saveNexusState('nexus_glow_intensity', glowIntensity); }, [glowIntensity]);
   useEffect(() => { saveNexusState('nexus_ambient_aura', ambientAuraEnabled); }, [ambientAuraEnabled]);
   useEffect(() => { saveNexusState('nexus_sound_enabled', soundEnabled); }, [soundEnabled]);
+  useEffect(() => { saveNexusState('nexus_background_listening', backgroundListening); }, [backgroundListening]);
   useEffect(() => { saveNexusState('nexus_compute_tier', computeTier); }, [computeTier]);
   useEffect(() => { saveNexusState('nexus_auto_detect_reasoning', autoDetectReasoning); }, [autoDetectReasoning]);
 
@@ -478,6 +480,8 @@ export default function App() {
               computeTier={computeTier}
               onToggleComputeTier={setComputeTier}
               onOpenThemeCustomizer={() => setIsThemeCustomizerOpen(true)}
+              backgroundListening={backgroundListening}
+              onToggleBackgroundListening={() => setBackgroundListening((value) => !value)}
             />
           )}
 
