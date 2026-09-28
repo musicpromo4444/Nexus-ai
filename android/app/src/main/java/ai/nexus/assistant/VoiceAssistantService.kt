@@ -11,12 +11,15 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import androidx.core.app.NotificationCompat
 
 class VoiceAssistantService : Service() {
     private var recognizer: SpeechRecognizer? = null
     private var listening = false
     private var wakeLock: PowerManager.WakeLock? = null
+    private val endpoint = "https://nexus-ai-three-neon.vercel.app/api/chat"
     private val channelId = "nexus_voice"
 
     override fun onCreate() {
@@ -43,6 +46,7 @@ class VoiceAssistantService : Service() {
                     if (text.isNotBlank()) {
                         val command = JSONObject().put("type", "voice_transcript").put("text", text).toString()
                         sendBroadcast(Intent(ACTION_COMMAND).setPackage(packageName).putExtra("command", command))
+                        Thread { requestAi(text) }.start()
                     }
                     listening = false
                     restart()
@@ -56,6 +60,24 @@ class VoiceAssistantService : Service() {
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
         recognizer?.startListening(intent)
+    }
+
+    private fun requestAi(text: String) {
+        try {
+            val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 8000
+                readTimeout = 15000
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+            }
+            connection.outputStream.use { it.write(JSONObject().put("message", text).toString().toByteArray()) }
+            val body = connection.inputStream.bufferedReader().use { it.readText() }
+            sendBroadcast(Intent(ACTION_AI_RESPONSE).setPackage(packageName).putExtra("response", body))
+            connection.disconnect()
+        } catch (e: Exception) {
+            sendBroadcast(Intent(ACTION_AI_RESPONSE).setPackage(packageName).putExtra("error", "AI service unavailable"))
+        }
     }
 
     private fun restart() {
@@ -85,5 +107,6 @@ class VoiceAssistantService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    companion object { const val ACTION_COMMAND = "ai.nexus.assistant.NEXUS_COMMAND" }
+    companion object { const val ACTION_COMMAND = "ai.nexus.assistant.NEXUS_COMMAND"
+        const val ACTION_AI_RESPONSE = "ai.nexus.assistant.NEXUS_AI_RESPONSE" }
 }
