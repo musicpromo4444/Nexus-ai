@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CreditCard,
   Zap,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { GradientTheme } from '../../types';
 import { playUiSound } from '../../utils/audio';
+import { loadNexusState, saveNexusState } from '../../utils/persistence';
 
 interface SubscriptionPageProps {
   activeTheme: GradientTheme;
@@ -29,7 +30,9 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [credits] = useState<number | null>(null);
   const [isAddingCredits] = useState<boolean>(false);
-  const [autoRefill] = useState<boolean>(false);
+  const [autoRefill, setAutoRefill] = useState<boolean>(() => loadNexusState('nexus_auto_refill', false));
+  const [billingNotice, setBillingNotice] = useState('Payment provider not connected.');
+  useEffect(() => { saveNexusState('nexus_auto_refill', autoRefill); }, [autoRefill]);
   const maxCredits = 25000;
 
   const handleAddCredits = () => {
@@ -183,7 +186,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({
             </button>
 
             <button
-              onClick={() => { if (soundEnabled) playUiSound('click'); }}
+              onClick={() => { if (soundEnabled) playUiSound('click'); setAutoRefill(v => !v); setBillingNotice('Auto-refill preference saved locally; payment provider is still required for real charges.'); }}
               className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.08] border border-white/10 transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${autoRefill ? 'text-emerald-400' : 'text-slate-500'}`} />
@@ -192,6 +195,8 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({
           </div>
         </div>
       </div>
+
+      {billingNotice && <div className="text-center text-xs text-slate-400">{billingNotice}</div>}
 
       {/* Monthly / Yearly Toggle */}
       <div className="flex items-center justify-center gap-3">
