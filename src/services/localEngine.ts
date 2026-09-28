@@ -337,7 +337,7 @@ export async function executeLocalEngine(params: {
 
     const text = `### On-Device Hardware & Telemetry Diagnostic
 
-• **Sandbox Mode:** ${telemetry.online ? 'Online (Air-Gapped Fallback Ready)' : 'Air-Gapped (Strict Isolation)'}
+• **Network:** ${telemetry.online ? 'Online' : 'Offline'}
 • **CPU Cores:** ${telemetry.cpuCores} concurrent hardware threads detected
 • **Memory Heap:** ${telemetry.memoryMb !== undefined ? `~${telemetry.memoryMb} MB actively allocated` : 'Unavailable in this browser'}
 • **Storage Quota:** ${telemetry.storageEstimateMb ? `~${telemetry.storageEstimateMb.used} MB used / ${telemetry.storageEstimateMb.total} MB available` : 'Unavailable in this browser'}
@@ -417,10 +417,10 @@ Only capabilities exposed by this browser are reported; unavailable values are n
   // 7. General Dynamic Local Response (Non-repeating contextual answer for general offline queries)
   const latencyMs = Math.max(12, Math.round(performance.now() - startTime) + 8);
   return {
-    text: `Processed on-device: **"${prompt}"**.\n\nOperating in **Local On-Device Mode** with zero cloud latency. To run full deep reasoning or retrieve live cloud data (such as sports scores or breaking news), toggle to Cloud API mode or ask a complex query to trigger the Cloud API router.`,
+    text: `I can handle local actions such as tasks, reminders, time, device checks, and settings here. This request requires cloud AI, which is not available right now.`,
     effectiveTier: 'quick',
     executionTier: 'local',
-    routeReason: 'Local On-Device Mode: Local State Engine',
+    routeReason: 'Local fallback: request requires cloud AI',
     autoTriggered: false,
     latencyMs,
     tokensUsed: 0,
