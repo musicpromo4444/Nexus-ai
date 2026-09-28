@@ -17,7 +17,7 @@ export type ExecutionTier = 'local' | 'cloud';
 export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';
 
 export interface LocalAction {
-  type: 'CHANGE_THEME' | 'TOGGLE_SOUND' | 'SWITCH_MODE' | 'CLEAR_CHAT' | 'ADD_TASK' | 'NONE';
+  type: 'CHANGE_THEME' | 'TOGGLE_SOUND' | 'SWITCH_MODE' | 'CLEAR_CHAT' | 'ADD_TASK' | 'SET_REMINDER' | 'OPEN_PAGE' | 'NONE';
   payload?: any;
   executed?: boolean;
 }
