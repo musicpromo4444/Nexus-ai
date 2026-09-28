@@ -1,0 +1,10 @@
+{
+  "name": "Nexus AI",
+  "short_name": "Nexus",
+  "description": "Nexus AI personal assistant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d13",
+  "theme_color": "#0b0d13",
+  "icons": []
+}
