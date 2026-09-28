@@ -14,7 +14,10 @@ import {
   Zap,
   Layers,
   Sliders,
-  Maximize2
+  Maximize2,
+  Smartphone,
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react';
 import { GradientTheme } from '../../types';
 import { playUiSound } from '../../utils/audio';
@@ -52,6 +55,29 @@ export const CreationPage: React.FC<CreationPageProps> = ({
     `// Nexus Audio Stream Pipeline Buffer\nexport class AudioStreamBuffer {\n  private chunks: Float32Array[] = [];\n  constructor(private maxBufferSize: number = 4096) {}\n  public push(chunk: Float32Array): void {\n    if (this.chunks.length < this.maxBufferSize) {\n      this.chunks.push(chunk);\n    }\n  }\n}`
   );
   const [copiedScaffold, setCopiedScaffold] = useState<boolean>(false);
+  const [showAppBuilder, setShowAppBuilder] = useState(false);
+  const [appStep, setAppStep] = useState(0);
+  const [appAnswers, setAppAnswers] = useState({ type: '', platforms: '', features: '', design: '' });
+  const [appQuote, setAppQuote] = useState<number | null>(null);
+
+  const appQuestions = [
+    { key: 'type', title: 'What do you want to build?', options: ['Mobile app', 'Web app', 'Mobile + web app', 'AI app', 'Marketplace'] },
+    { key: 'platforms', title: 'Where should it work?', options: ['Android', 'iPhone', 'Android + iPhone', 'Web + mobile'] },
+    { key: 'features', title: 'What should it do?', options: ['Simple', 'Business', 'Advanced', 'AI-powered', 'Marketplace / payments'] },
+    { key: 'design', title: 'What level of design do you want?', options: ['Clean & simple', 'Premium', 'Custom brand design'] },
+  ] as const;
+
+  const chooseAppAnswer = (value: string) => {
+    const key = appQuestions[appStep].key;
+    setAppAnswers((current) => ({ ...current, [key]: value }));
+    if (appStep < appQuestions.length - 1) setAppStep((step) => step + 1);
+    else {
+      const complexity = value.includes('Custom') ? 100 : value.includes('Premium') ? 50 : 0;
+      const featureValue = appAnswers.features.includes('Marketplace') || appAnswers.features.includes('AI') ? 150 : appAnswers.features.includes('Advanced') ? 100 : 0;
+      const platformValue = appAnswers.platforms.includes('+') ? 100 : 0;
+      setAppQuote(150 + complexity + featureValue + platformValue);
+    }
+  };
 
   const handleGenerateImage = () => {
     if (soundEnabled) playUiSound('activate');
@@ -105,6 +131,41 @@ export const CreationPage: React.FC<CreationPageProps> = ({
           <span>Return to Assistant</span>
         </button>
       </div>
+
+      {/* ALWAYS-VISIBLE APP BUILDER */}
+      <button
+        onClick={() => { setShowAppBuilder(true); setAppStep(0); setAppQuote(null); if (soundEnabled) playUiSound('activate'); }}
+        className="w-full p-5 rounded-2xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.08] transition-all text-left flex items-center justify-between shadow-lg"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/20" style={{ background: activeTheme.gradient }}>
+            <Smartphone className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2"><h2 className="text-lg font-bold text-white">Create an App</h2><span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">FREE TO START</span></div>
+            <p className="text-xs text-slate-400 mt-1">Tell Nexus what you want. Nexus asks the questions, plans it, then gives you the build price.</p>
+          </div>
+        </div>
+        <ArrowRight className="w-5 h-5 text-slate-400" />
+      </button>
+
+      {showAppBuilder && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-[#10151a] border border-white/10 p-6 shadow-2xl">
+            {!appQuote ? <>
+              <div className="flex items-center justify-between mb-5"><div><p className="text-[10px] uppercase tracking-widest text-slate-500">Create an App</p><h2 className="text-xl font-bold text-white mt-1">{appQuestions[appStep].title}</h2></div><button onClick={() => setShowAppBuilder(false)} className="text-slate-400">✕</button></div>
+              <div className="space-y-2">{appQuestions[appStep].options.map((option) => <button key={option} onClick={() => chooseAppAnswer(option)} className="w-full p-3 rounded-xl bg-white/[0.04] border border-white/10 hover:border-white/25 text-left text-sm text-white flex items-center justify-between"><span>{option}</span><ArrowRight className="w-4 h-4 text-slate-500" /></button>)}</div>
+              <p className="text-[10px] text-slate-500 mt-4">Step {appStep + 1} of {appQuestions.length} • No charge for this consultation.</p>
+            </> : <>
+              <div className="flex items-center gap-3 mb-5"><CheckCircle2 className="w-7 h-7 text-emerald-400" /><div><p className="text-[10px] uppercase tracking-widest text-emerald-400">Plan complete</p><h2 className="text-xl font-bold text-white">Your starting build price</h2></div></div>
+              <div className="text-4xl font-black text-white mb-2">$ {appQuote.toLocaleString()}</div>
+              <p className="text-sm text-slate-400">Starting at $150. The exact price is calculated from the requirements you gave Nexus.</p>
+              <div className="mt-5 p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-slate-300 space-y-2">{Object.entries(appAnswers).map(([key, value]) => <div key={key} className="flex justify-between gap-3"><span className="capitalize text-slate-500">{key}</span><span>{value}</span></div>)}</div>
+              <button onClick={() => setShowAppBuilder(false)} className="w-full mt-5 py-3 rounded-xl text-sm font-bold text-white" style={{ background: activeTheme.gradient }}>Continue with this app plan</button>
+            </>}
+          </div>
+        </div>
+      )}
 
       {/* Title */}
       <div className="space-y-2">
