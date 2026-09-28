@@ -111,6 +111,11 @@ export function detectLocalUIAction(prompt: string): LocalAction | undefined {
     };
   }
 
+  const remember = prompt.match(/^(?:remember|save this|remember that)\s+(.+)/i);
+  if (remember && remember[1]?.trim()) return { type:'SAVE_MEMORY', payload:{ title:'Remembered preference', content:remember[1].trim() }, executed:false };
+  const forget = prompt.match(/^(?:forget|delete memory)\s+(.+)/i);
+  if (forget && forget[1]?.trim()) return { type:'DELETE_MEMORY', payload:{ content:forget[1].trim() }, executed:false };
+
   const completeTask = prompt.match(/(?:complete|finish|done with)\s+(?:task\s*)?(\d+)/i);
   if (completeTask) return { type:'COMPLETE_TASK', payload:{ index:Number(completeTask[1])-1 }, executed:false };
   const deleteTask = prompt.match(/(?:delete|remove)\s+(?:task\s*)?(\d+)/i);
