@@ -27,6 +27,7 @@ import { VoiceEnvironmentPage } from './components/pages/VoiceEnvironmentPage';
 import { playUiSound } from './utils/audio';
 import { loadNexusState, saveNexusState } from './utils/persistence';
 import { dispatchHybridReasoning } from './services/reasoningEngine';
+import { NexusSpeakingOverlay } from './components/NexusSpeakingOverlay';
 
 const EMPTY_SESSION: ChatSession = {
   id: 'session-empty',
@@ -290,6 +291,9 @@ export default function App() {
     return await handleSendMessage(query);
   };
 
+  const speakingText = [...currentMessages].reverse().find((message) => message.sender === 'assistant')?.text || 'I’m speaking…';
+  const showSpeakingPage = activePage === 'assistant' && mode === 'voice' && !isPagesDrawerOpen && voiceState === 'speaking';
+
   // Scheduled routine runner: daily routines execute while Nexus is open.
   useEffect(() => {
     const runDueRoutines = async () => {
@@ -360,6 +364,8 @@ export default function App() {
     glowIntensity === 'subtle' ? '0.25' : glowIntensity === 'radiant' ? '0.75' : '0.45';
 
   return (
+    <>
+    {showSpeakingPage && <NexusSpeakingOverlay theme={activeTheme} text={speakingText} />}
     <div className="flex h-screen w-screen overflow-hidden bg-[#0b0d13] text-[#e2e8f0] relative font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Dynamic Ambient Background Aurora Mesh */}
       {ambientAuraEnabled && (
@@ -562,5 +568,6 @@ export default function App() {
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
       />
     </div>
+    </>
   );
 }
