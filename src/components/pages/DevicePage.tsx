@@ -18,10 +18,13 @@ export const DevicePage: React.FC<DevicePageProps> = ({ activeTheme, onBackToAss
   const [bridgeConnected, setBridgeConnected] = useState(false);
   const [permissionMessage, setPermissionMessage] = useState('');
   const [nativeActionMessage, setNativeActionMessage] = useState('');
+  const [bridgePermissions, setBridgePermissions] = useState<string[]>([]);
 
   const checkCapabilities = async () => {
     setChecking(true);
-    setBridgeConnected(getDeviceBridgeStatus().connected);
+    const bridge = getDeviceBridgeStatus();
+    setBridgeConnected(bridge.connected);
+    setBridgePermissions(bridge.permissions);
     const notification = typeof window !== 'undefined' && 'Notification' in window;
     const speech = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
     const media = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
@@ -73,7 +76,7 @@ export const DevicePage: React.FC<DevicePageProps> = ({ activeTheme, onBackToAss
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-white">Permission actions</h2>
-            <p className="text-xs text-slate-400 mt-1">{bridgeConnected ? 'Android bridge connected.' : 'Browser-only mode. Native phone control is not connected.'}</p>
+            <p className="text-xs text-slate-400 mt-1">{bridgeConnected ? `Android bridge connected${bridgePermissions.length ? ` • ${bridgePermissions.length} permission(s)` : ''}.` : 'Browser-only mode. Native phone control is not connected.'}</p>
           </div>
           <span className={`text-[10px] px-2 py-1 rounded-full border ${bridgeConnected ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'}`}>{bridgeConnected ? 'ANDROID' : 'BROWSER'}</span>
         </div>
