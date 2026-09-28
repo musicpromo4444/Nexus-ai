@@ -87,9 +87,9 @@ export function detectLocalUIAction(prompt: string): LocalAction | undefined {
   }
 
   // 4. Open Nexus pages
-  const pageMatch = p.match(/(?:open|go to|show)\s+(settings|profile|memory|memories|routines|recommendations|creation|subscription|device|assistant)/i);
+  const pageMatch = p.match(/(?:open|go to|show)\s+(settings|profile|memory|memories|routines|recommendations|creation|subscription|device|voice environment|voice-environment|assistant)/i);
   if (pageMatch) {
-    const map: Record<string,string> = { settings:'settings', profile:'profile', memory:'memory-routines', memories:'memory-routines', routines:'memory-routines', recommendations:'recommendation', creation:'creation', subscription:'subscription', device:'device', assistant:'assistant' };
+    const map: Record<string,string> = { settings:'settings', profile:'profile', memory:'memory-routines', memories:'memory-routines', routines:'memory-routines', recommendations:'recommendation', creation:'creation', subscription:'subscription', device:'device', 'voice environment':'voice-environment', 'voice-environment':'voice-environment', assistant:'assistant' };
     return { type: 'OPEN_PAGE', payload: { page: map[pageMatch[1].toLowerCase()] }, executed: false };
   }
 
@@ -294,20 +294,6 @@ export function routeQuery(params: {
     };
   }
 
-  // 4. Check for Deep Reasoning / Multi-step analysis
-  const requiresDeep = computeTier === 'deep' || (autoDetect && isDeepReasoningQuery(prompt));
-  if (requiresDeep) {
-    return {
-      targetTier: 'cloud',
-      routeReason: computeTier === 'deep'
-        ? 'Cloud API Router: Explicit Deep Reasoning'
-        : 'Cloud API Router: Auto-Detected Multi-Step Reasoning',
-      isLiveData: false,
-      isDeepReasoning: true,
-      autoTriggered: computeTier !== 'deep',
-    };
-  }
-
   // 5. Local reminder commands
   const reminder = prompt.match(/(?:remind me|set a reminder)\s+(?:in\s+)?(\d+)\s*(minute|minutes|min|hour|hours|hr|hrs)\s*(?:to|that)\s+(.+)/i);
   if (reminder) {
@@ -322,6 +308,20 @@ export function routeQuery(params: {
       isDeepReasoning: false,
       autoTriggered: false,
       localAction: { type: 'SET_REMINDER', payload: { title, minutes }, executed: false },
+    };
+  }
+
+  // 4. Check for Deep Reasoning / Multi-step analysis
+  const requiresDeep = computeTier === 'deep' || (autoDetect && isDeepReasoningQuery(prompt));
+  if (requiresDeep) {
+    return {
+      targetTier: 'cloud',
+      routeReason: computeTier === 'deep'
+        ? 'Cloud API Router: Explicit Deep Reasoning'
+        : 'Cloud API Router: Auto-Detected Multi-Step Reasoning',
+      isLiveData: false,
+      isDeepReasoning: true,
+      autoTriggered: computeTier !== 'deep',
     };
   }
 
